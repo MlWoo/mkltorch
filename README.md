@@ -1,2 +1,2 @@
 # mkltorch
-mkltorch is used to support to use mkldnn library to accelerate Deep Neural Network(DNN) computation. It provides MKLTesnor to be called in MKL DNN library in convenience.
+MKLDNN library is designed to accelerate Deep Neural Network(DNN) computation. The repo of mkltorch provides MKLTensor to be called in MKL DNN library in convenience.
