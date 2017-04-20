@@ -13,7 +13,7 @@
 #undef Real
 
 
-#define real doule
+#define real double
 #define accreal double
 #define Real Double
 #line 1 TH_GENERIC_FILE

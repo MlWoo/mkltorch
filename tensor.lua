@@ -3,7 +3,7 @@
 local MKLTensor = {}
 
 
-local MklTensorTypes = {
+local MKLTensorTypes = {
    float  = 'torch.MKLFloatTensor',
    double = 'torch.MKLDoubleTensor',
    long   = 'torch.MKLLongTensor'
@@ -11,7 +11,7 @@ local MklTensorTypes = {
 
 
 
-for _, MKLTensorType in pairs(MklTensorTypes) do
+for _, MKLTensorType in pairs(MKLTensorTypes) do
    local metatable = torch.getmetatable(MKLTensorType)
    for funcname, func in pairs(MKLTensor) do
       rawset(metatable, funcname, func)

@@ -15,20 +15,20 @@ if ok then
    for Real, real in pairs(Real2real) do
 
       local cdefs = [[
-typedef struct THMklRealTensor
+typedef struct THMKLRealTensor
 {
 	THRealTensor *tensor;   
 	char freeFlag;
     int mklStorage;  //0:storage buffer allocated by THTensor, 1:storage buffer allocated by mklnn
     long mklLayout;
-} THMklRealTensor;
+} THMKLRealTensor;
 ]]
 
       cdefs = cdefs:gsub('Real', Real):gsub('real', real)
       ffi.cdef(cdefs)
       local Tensor_type = string.format('torch.MKL%sTensor', Real)
       local Tensor = torch.getmetatable('torch.MKLLongTensor')
-	  local Tensor_tt = ffi.typeof('THMkl' .. Real .. 'Tensor**')
+	  local Tensor_tt = ffi.typeof('THMKL' .. Real .. 'Tensor**')
 	  
 	  
 	  rawset(Tensor,

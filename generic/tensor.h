@@ -4,13 +4,13 @@
 
 
 
-typedef struct THMklTensor
+typedef struct THMKLTensor
 {
 	THTensor *tensor;   
 	char freeFlag;
     int mklStorage;  //0:storage buffer allocated by THTensor, 1:storage buffer allocated by mklnn
     long mklLayout;
-} THMklTensor;
+} THMKLTensor;
 
 
 

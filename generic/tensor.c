@@ -5,12 +5,37 @@
 
 
 //////////////////////////////////////////////////////////////////////
-void TH_MKL_(retain)(THMklTensor *self)
+real* TH_MKL_(data)(THMKLTensor *self)
+{
+	//printf("data --permission-----------refcount = %4d\n", self->freeFlag);
+  if( self->tensor && self->tensor->storage)
+    return (self->tensor->storage->data+self->tensor->storageOffset);
+  else
+    return NULL;
+}
+void TH_MKL_(reisze4d)(THMKLTensor *self, long size0, long size1, long size2, long size3)
+{
+	//printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
+  long size[4] = {size0, size1, size2, size3};
+
+  THTensor_(resizeNd)(self->tensor, 4, size, NULL);
+	
+}
+void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
+{
+	//printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
+	
+  if(!THTensor_(isSameSizeAs)(self->tensor, src->tensor))
+    THTensor_(resizeNd)(self->tensor, src->tensor->nDimension, src->tensor->size, NULL);
+}
+
+//----------------------------------------------------------------------------
+void TH_MKL_(retain)(THMKLTensor *self)
 {
 	printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
 }
 
-void TH_MKL_(free)(THMklTensor *self)
+void TH_MKL_(free)(THMKLTensor *self)
 {
   if(!self )
     return;
@@ -25,22 +50,25 @@ void TH_MKL_(free)(THMklTensor *self)
   } 
 }
 
+//////////////////////////////////////////////////////////////////////
+
+
 
 static int torch_mkl_(new)(lua_State *L)
 {
   printf("enter new tensor\n");
-  THMklTensor* pTensor = THAlloc(sizeof(THMklTensor));
+  THMKLTensor* pTensor = THAlloc(sizeof(THMKLTensor));
   if(pTensor == NULL){
     printf("Cannot allocate memory for Strategy\n");
   }
-  //set metetable for THMklTensor
+  //set metetable for THMKLTensor
   pTensor->freeFlag = 0;
   pTensor->mklStorage = 0;
   pTensor->mklLayout = 0;
 
   printf("enter new tensor3\n");
   luaT_pushudata(L, pTensor, torch_mkl_tensor);    
-  printf("construct THMklTensor = %p\n", pTensor);
+  printf("construct THMKLTensor = %p\n", pTensor);
   printf("construct tensor      = %p\n", pTensor->tensor);
 	
 	return 1;
@@ -48,7 +76,7 @@ static int torch_mkl_(new)(lua_State *L)
 
 static int torch_mkl_(retain)(lua_State *L)
 {
-  THMklTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   printf("retain -- recycle heap memory pTensor = %p\n", pTensor);
   printf("retain -- recycle heap memory tensor  = %p\n", pTensor->tensor);
   TH_MKL_(retain)(pTensor);
@@ -58,7 +86,7 @@ static int torch_mkl_(retain)(lua_State *L)
 
 static int torch_mkl_(free)(lua_State *L)
 {
-  THMklTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   printf("free -- recycle heap memory pTensor = %p\n", pTensor);
   printf("free -- recycle heap memory tensor  = %p\n", pTensor->tensor);
   TH_MKL_(free)(pTensor);
@@ -67,7 +95,7 @@ static int torch_mkl_(free)(lua_State *L)
 
 static int torch_mkl_(factory)(lua_State *L)
 {
-  THMklTensor* pTensor = THAlloc(sizeof(THMklTensor));
+  THMKLTensor* pTensor = THAlloc(sizeof(THMKLTensor));
   luaT_pushudata(L, pTensor, torch_mkl_tensor);
   return 1;
 }
