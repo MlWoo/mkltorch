@@ -2,14 +2,14 @@ package = "mkltorch"
 version = "scm-1"
 
 source = {
-   url = "git://github.com/torch/cutorch.git",
+   url = "git://github.com/MlWoo/mkltorch.git",
 }
 
 description = {
-   summary = "Torch CUDA Implementation",
+   summary = "Wrapper of mklnn library Implementation",
    detailed = [[
    ]],
-   homepage = "https://github.com/torch/cutorch",
+   homepage = "https://github.com/MlWoo/mkltorch",
    license = "BSD"
 }
 
