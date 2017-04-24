@@ -1,20 +1,79 @@
 
 -- additional methods for Tensor
-local MKLTensor = {}
 
 
-local MKLTensorTypes = {
-   float  = 'torch.MKLFloatTensor',
-   double = 'torch.MKLDoubleTensor',
-   long   = 'torch.MKLLongTensor'
+local TensorTypes = {
+   float  = 'torch.FloatTensor',
+   double = 'torch.DoubleTensor',
+   long   = 'torch.LongTensor'
+
 }
 
+local TH2MKL = {
+   float = 'mklFloat',
+   double = 'mklDouble',
+   long = 'mklLong'
+}
+
+local MKLTensorTypes = {
+   mklFloat  = 'torch.MKLFloatTensor',
+   mklDouble = 'torch.MKLDoubleTensor',
+   mklLong   = 'torch.MKLLongTensor'
+}
+
+local MKL2TH = {
+   mklFloat = 'float',
+   mklDouble = 'double',
+   mklLong = 'long'
+}
+print('outside')
 
 
-for _, MKLTensorType in pairs(MKLTensorTypes) do
-   local metatable = torch.getmetatable(MKLTensorType)
-   for funcname, func in pairs(MKLTensor) do
-      rawset(metatable, funcname, func)
-   end
+local function Tensor__TH2MKL__converter(type)
+   return function(self)
+            local current = torch.typename(self)
+            if not type then return current end
+            if type ~= current then
+              local new = torch.getmetatable(type).new()
+              --pStruct = Tensor_tt(self)[0]
+              
+              return new
+            else
+              return self
+            end
+           end
+    end
+
+
+local function Tensor__MKL2TH__converter(type)
+    return function(type)
+             local current = torch.typename(self)
+             if not type then return current end
+             if type ~= current then    
+               local new = torch.getmetatable(type).new()
+      
+               return new
+             else
+               return self
+             end
+    end
 end
+
+
+for type, SrcType in pairs(TensorTypes) do
+	local metatable = torch.getmetatable(SrcType)
+	local MKLType = TH2MKL[type]
+	--rawset(metatable, 'mkl', torch.tic())
+    rawset(metatable, 'mkl', Tensor__TH2MKL__converter(MKLTensorTypes[MKLType]))
+    rawset(metatable, MKLType, Tensor__TH2MKL__converter(MKLTensorTypes[MKLType]))
+end
+
+for type, SrcType in pairs(MKLTensorTypes) do
+	local metatable = torch.getmetatable(SrcType)
+	local THType = MKL2TH[type]
+    rawset(metatable, 'th', Tensor__MKL2TH__converter(TensorTypes[THType]))
+    rawset(metatable, THType, Tensor__MKL2TH__converter(TensorTypes[THTyp]))
+end
+
+
 
