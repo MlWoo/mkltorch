@@ -14,7 +14,7 @@ SET(src init.c tensor.c)
 SET(luasrc init.lua tensor.lua FFI.lua)
 
 ADD_TORCH_PACKAGE(mkltorch "${src}" "${luasrc}")
-TARGET_LINK_LIBRARIES(mkltorch luaT THC)
+TARGET_LINK_LIBRARIES(mkltorch luaT)
 
 IF(LUALIB)
   TARGET_LINK_LIBRARIES(mkltorch ${LUALIB})

@@ -13,5 +13,9 @@ typedef struct THMKLTensor
 } THMKLTensor;
 
 
+static int TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src);
+static int TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src);
+
+
 
 #endif

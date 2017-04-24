@@ -93,32 +93,42 @@ static int torch_mkl_(free)(lua_State *L)
   return 0;
 }
 
+
+static int TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src)
+{
+
+}
+
+static int TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src)
+{
+
+}
+
 static int torch_mkl_(copyFromTH)(lua_State *L)
 {
   THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   void *src;
   if( (src = luaT_toudata(L, 2, "torch.LongTensor")) )
-    TH_MKL_(copyFrom2THLong)(pTensor, src);
+    THMKLLongTensorcopyFromTH(pTensor, src);
   else if( (src = luaT_toudata(L, 2, "torch.FloatTensor")) )
-    TH_MKL_(copyFrom2THFloat)(tensor, src);
+    THMKLFloatTensorcopyFromTH(pTensor, src);
   else if( (src = luaT_toudata(L, 2, "torch.DoubleTensor")) )
-    TH_MKL_(copyFrom2THDouble)(tensor, src);
+    THMKLDoubleTensorcopyFromTH(pTensor, src);
     luaL_typerror(L, 2, "torch.*Tensor");
   lua_settop(L, 1);
   return 1;
 }
-}
 
-static int torch_mkl_(copyBackTH)(lua_State *L)
+static int torch_mkl_(copyBacktoTH)(lua_State *L)
 {
   THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   void *src;
   if( (src = luaT_toudata(L, 2, "torch.LongTensor")) )
-    TH_MKL_(copyFrom2THLong)(pTensor, src);
+    THMKLLongTensorcopyBacktoTH(pTensor, src);
   else if( (src = luaT_toudata(L, 2, "torch.FloatTensor")) )
-    TH_MKL_(copyFrom2THFloat)(tensor, src);
+    THMKLFloatTensorcopyBacktoTH(pTensor, src);
   else if( (src = luaT_toudata(L, 2, "torch.DoubleTensor")) )
-    TH_MKL_(copyFrom2THDouble)(tensor, src);
+    THMKLDoubleTensorcopyBacktoTH(pTensor, src);
     luaL_typerror(L, 2, "torch.*Tensor");
   lua_settop(L, 1);
   return 1;
@@ -140,7 +150,7 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"new", torch_mkl_(new)},
   {"free", torch_mkl_(free)},
  // {"__len__", torch_mpi_(size)},
-  {"copyFromTH", torch_mkl_(copyFrom2TH)},
+  {"copyFromTH", torch_mkl_(copyFromTH)},
  // {"clone", torch_mpi_(clone)},               //deep copy
   {NULL, NULL}
 };
