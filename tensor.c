@@ -14,6 +14,7 @@
 #define torch_mkl_(NAME) 	TH_CONCAT_4(torch_MKL, Real, Tensor_, NAME)		
 #define TH_MKL_(NAME)       TH_CONCAT_4(THMKL, Real, Tensor, NAME)					
 #define torch_mkl_tensor	TH_CONCAT_STRING_4(torch., MKL, Real, Tensor)
+#define torch_tensor	TH_CONCAT_STRING_3(torch., Real, Tensor)
 #define THMKLTensor			TH_CONCAT_3(THMKL, Real, Tensor)
 
 

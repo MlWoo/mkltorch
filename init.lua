@@ -5,4 +5,4 @@ require('mkltorch.tensor')
 require('mkltorch.FFI')
 
 
---return mkltorch
+return mkltorch

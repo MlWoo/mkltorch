@@ -22,9 +22,9 @@ local MKLTensorTypes = {
 }
 
 local MKL2TH = {
-   mklFloat = 'float',
-   mklDouble = 'double',
-   mklLong = 'long'
+   mklFloat  = 'float' ,
+   mklDouble = 'double' ,
+   mklLong   = 'long'
 }
 print('outside')
 
@@ -35,6 +35,7 @@ local function Tensor__TH2MKL__converter(type)
             if not type then return current end
             if type ~= current then
               local new = torch.getmetatable(type).new()
+              new:copyFromTH(self)
               --pStruct = Tensor_tt(self)[0]
               
               return new
@@ -46,12 +47,15 @@ local function Tensor__TH2MKL__converter(type)
 
 
 local function Tensor__MKL2TH__converter(type)
-    return function(type)
+    return function(self)
              local current = torch.typename(self)
              if not type then return current end
-             if type ~= current then    
+             if type ~= current then
+               print("Tensor__MKL2TH__converter, type = ", type,", current = ",current)
                local new = torch.getmetatable(type).new()
-      
+               print(new:type())
+               print(self:type())
+               self:copyBacktoTH(new)
                return new
              else
                return self
@@ -59,6 +63,11 @@ local function Tensor__MKL2TH__converter(type)
     end
 end
 
+local function getType(type)
+   return function(self)
+             return type
+             end
+end
 
 for type, SrcType in pairs(TensorTypes) do
 	local metatable = torch.getmetatable(SrcType)
@@ -71,8 +80,12 @@ end
 for type, SrcType in pairs(MKLTensorTypes) do
 	local metatable = torch.getmetatable(SrcType)
 	local THType = MKL2TH[type]
+	print("SrcType = ", SrcType)
+	print("type = ", type)
+	print("THType = ", THType)
     rawset(metatable, 'th', Tensor__MKL2TH__converter(TensorTypes[THType]))
-    rawset(metatable, THType, Tensor__MKL2TH__converter(TensorTypes[THTyp]))
+    rawset(metatable, THType, Tensor__MKL2TH__converter(TensorTypes[THType]))
+    rawset(metatable, 'type', getType(SrcType))
 end
 
 

@@ -19,3 +19,22 @@ TARGET_LINK_LIBRARIES(mkltorch luaT)
 IF(LUALIB)
   TARGET_LINK_LIBRARIES(mkltorch ${LUALIB})
 ENDIF()
+
+INSTALL(TARGETS mkltorch 
+        LIBRARY DESTINATION "${Torch_INSTALL_LIB}")
+
+INSTALL(FILES
+        init.c
+        tensor.c
+        MKLTensor.h
+        DESTINATION "${Torch_INSTALL_INCLUDE}/mkltorch")
+
+
+
+INSTALL(FILES
+        generic/tensor.h
+        generic/tensor.c
+        DESTINATION "${Torch_INSTALL_INCLUDE}/mkltorch/generic")
+
+
+
