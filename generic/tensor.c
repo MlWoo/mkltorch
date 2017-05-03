@@ -42,6 +42,7 @@ void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
 	
   if(!THTensor_(isSameSizeAs)(self->tensor, src->tensor))
     THTensor_(resizeNd)(self->tensor, src->tensor->nDimension, src->tensor->size, NULL);
+  self->size = self->tensor->size;	
 }
 
 void TH_MKL_(type)(THMKLTensor *self)
