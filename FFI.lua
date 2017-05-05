@@ -7,7 +7,7 @@ local ok, ffi = pcall(require, 'ffi')
 if ok then
 
    local Real2real = {
-      Long='long',
+--      Long='long',
       Float='float',
       Double='double'
    }

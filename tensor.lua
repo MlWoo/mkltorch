@@ -5,26 +5,26 @@
 local TensorTypes = {
    float  = 'torch.FloatTensor',
    double = 'torch.DoubleTensor',
-   long   = 'torch.LongTensor'
+--   long   = 'torch.LongTensor'
 
 }
 
 local TH2MKL = {
    float = 'mklFloat',
    double = 'mklDouble',
-   long = 'mklLong'
+--   long = 'mklLong'
 }
 
 local MKLTensorTypes = {
    mklFloat  = 'torch.MKLFloatTensor',
    mklDouble = 'torch.MKLDoubleTensor',
-   mklLong   = 'torch.MKLLongTensor'
+--   mklLong   = 'torch.MKLLongTensor'
 }
 
 local MKL2TH = {
    mklFloat  = 'float' ,
    mklDouble = 'double' ,
-   mklLong   = 'long'
+--   mklLong   = 'long'
 }
 print('outside')
 
