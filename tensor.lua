@@ -35,7 +35,7 @@ local function Tensor__TH2MKL__converter(type)
             if not type then return current end
             if type ~= current then
               local new = torch.getmetatable(type).new()
-              new:copyFromTH(self)
+              new:TH2MKL(self)
               --pStruct = Tensor_tt(self)[0]
               
               return new
@@ -55,7 +55,7 @@ local function Tensor__MKL2TH__converter(type)
                local new = torch.getmetatable(type).new()
                print(new:type())
                print(self:type())
-               self:copyBacktoTH(new)
+               self:MKL2TH(new)
                return new
              else
                return self

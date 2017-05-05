@@ -5,37 +5,58 @@
 ////////////////////////////////////////////////////////////////////////
 dnnError_t  TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
 {
-	long usrPrmt = 0;
-	dnnLayout_t mkldnnLayout = (dnnLayout_t)(pTensor->mkldnnLayout);
-	assert(mkldnnLayout != 0);
-	dnnLayout_t usrLayout = 0;
-	dnnPrimitive_t* cvtPrmt = NULL;
-	real* cvtBuffer = NULL;
-	int dimension = 4;
-	/*
-	size_t N = pTensor->tensor->size[0];
-	size_t C = pTensor->tensor->size[1];
-	size_t H = pTensor->tensor->size[2];
-	size_t W = pTensor->tensor->size[3];
-	size_t dimension = 4;
-	size_t inputSize[] = {W,H,C,N};
-	size_t strides[dimension] = { 1, inW, inH * inW, inC * inH * inW };
-	*/
-	dnnError_t err;
-	CHECK_ERR( MKLDNN_(dnnLayoutCreate)((dnnLayout_t*)&usrLayout, dimension, pTensor->tensor->size, pTensor->tensor->stride) , err );
-	
-	if (! MKLDNN_(dnnLayoutCompare)((dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout)) {
-		CHECK_ERR( MKLDNN_(dnnConversionCreate)((dnnPrimitive_t*)cvtPrmt, (dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout), err );
-		CHECK_ERR( MKLDNN_(dnnAllocateBuffer)((void**)&cvtBuffer, (dnnLayout_t)mkldnnLayout), err );
-	}
-	printf("workspace primitives = %p    buffer = %p", cvtPrmt, cvtBuffer);
-	pTensor->workspace[0] = (long)cvtPrmt;
-	pTensor->workspace[1] = (long)cvtBuffer;
+  long usrPrmt = 0;
+  dnnLayout_t mkldnnLayout = (dnnLayout_t)(pTensor->mkldnnLayout);
+  assert(mkldnnLayout != 0);
+  dnnLayout_t usrLayout = 0;
+  dnnPrimitive_t* cvtPrmt = NULL;
+  real* cvtBuffer = NULL;
+  int dimension = 4;
+/*
+size_t N = pTensor->tensor->size[0];
+size_t C = pTensor->tensor->size[1];
+size_t H = pTensor->tensor->size[2];
+size_t W = pTensor->tensor->size[3];
+size_t dimension = 4;
+size_t inputSize[] = {W,H,C,N};
+size_t strides[dimension] = { 1, inW, inH * inW, inC * inH * inW };
+*/
+  dnnError_t err;
+  CHECK_ERR( MKLDNN_(dnnLayoutCreate)((dnnLayout_t*)&usrLayout, dimension, pTensor->tensor->size, pTensor->tensor->stride) , err );
 
-	return E_SUCCESS;
+  if (! MKLDNN_(dnnLayoutCompare)((dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout)) {
+    CHECK_ERR( MKLDNN_(dnnConversionCreate)((dnnPrimitive_t*)cvtPrmt, (dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout), err );
+    CHECK_ERR( MKLDNN_(dnnAllocateBuffer)((void**)&cvtBuffer, (dnnLayout_t)mkldnnLayout), err );
+  }
+  printf("workspace primitives = %p    buffer = %p", cvtPrmt, cvtBuffer);
+  pTensor->workspace[0] = (long)cvtPrmt;
+  pTensor->workspace[1] = (long)cvtBuffer;
+
+  return E_SUCCESS;
 
 }
 
+static int TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
+{
+  
+  //pTensor->size = src->size;
+  if ((0 == src->workspace[0]) && (0 == src->workspace[1])){
+	TH_MKL_(createWorkspace)(src);
+  }
+  assert(0 != src->workspace[0]*src->workspace[1]);
+  THTensor_(resizeAs)(pTensor, src->tensor); 
+  dnnError_t err;
+  dnnPrimitive_t cvtPrmt = (dnnPrimitive_t)src->workspace[0];
+  real * cvtbuffer = (real *)src->workspace[1];
+	
+  if( cvtPrmt != 0)
+  {
+    CHECK_ERR( MKLDNN_(dnnConversionExecute)(cvtPrmt, (dnnLayout_t)(src->mkldnnLayout), cvtbuffer), err );
+    src->tensor->storage->data =  cvtbuffer;
+  }
+  src->tensor->flag = src->flagBackup;
+  THTensor_(copy)(pTensor, src->tensor);
+}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -76,7 +97,7 @@ void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
 	
   if(!THTensor_(isSameSizeAs)(self->tensor, src->tensor))
     THTensor_(resizeNd)(self->tensor, src->tensor->nDimension, src->tensor->size, NULL);
-  self->size = self->tensor->size;	
+    self->size = self->tensor->size;	
 }
 
 void TH_MKL_(type)(THMKLTensor *self)
@@ -121,19 +142,28 @@ static int TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src)
   pTensor->workspace[1] = 0;
 }
 
+static int TH_MKL_(TH2MKL)(THMKLTensor * pTensor, THTensor * src)
+{
+  TH_MKL_(copyFromTH)(pTensor, src);
+}
+
 static int TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src)
 {
-  printf("TH_MKL_(copyBacktoTH) called, pTensor = %p, src = %p\n", pTensor, src);
-  //pTensor->size = src->size;
-  if ((0 == src->workspace[0]) && (0 == src->workspace[1])){
-	TH_MKL_(createWorkspace)(src);
-  }
-  THTensor_(resizeAs)(pTensor, src->tensor);
+ 
+  THTensor_(resizeAs)(pTensor, src->tensor);  
   src->tensor->flag = src->flagBackup;
   THTensor_(copy)(pTensor, src->tensor);
 }
 
-
+static int TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
+{
+  printf("TH_MKL_(copyBacktoTH) called, pTensor = %p, src = %p\n", pTensor, src);
+  
+  if(0 == src->mkldnnLayout)
+    TH_MKL_(copyBacktoTH)(pTensor, src);
+  else
+    TH_MKL_(convertToTH)(pTensor, src);
+}
 
 
 //////////////////////////////////////////////////////////////////////
