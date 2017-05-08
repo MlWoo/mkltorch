@@ -26,7 +26,7 @@ size_t strides[dimension] = { 1, inW, inH * inW, inC * inH * inW };
 
   if (! MKLDNN_(dnnLayoutCompare)((dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout)) {
     CHECK_ERR( MKLDNN_(dnnConversionCreate)((dnnPrimitive_t*)cvtPrmt, (dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout), err );
-    CHECK_ERR( MKLDNN_(dnnAllocateBuffer)((void**)&cvtBuffer, (dnnLayout_t)mkldnnLayout), err );
+    CHECK_ERR( MKLDNN_(dnnAllocateBuffer)((void**)&cvtBuffer, (dnnLayout_t)usrLayout), err );
   }
   printf("workspace primitives = %p    buffer = %p", cvtPrmt, cvtBuffer);
   pTensor->workspace[0] = (long)cvtPrmt;
@@ -47,15 +47,15 @@ static int TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
   THTensor_(resizeAs)(pTensor, src->tensor); 
   dnnError_t err;
   dnnPrimitive_t cvtPrmt = (dnnPrimitive_t)src->workspace[0];
-  real * cvtbuffer = (real *)src->workspace[1];
+//  real * cvtbuffer = (real *)src->workspace[1];
 	
   if( cvtPrmt != 0)
   {
-    CHECK_ERR( MKLDNN_(dnnConversionExecute)(cvtPrmt, (dnnLayout_t)(src->mkldnnLayout), cvtbuffer), err );
-    src->tensor->storage->data =  cvtbuffer;
+    CHECK_ERR( MKLDNN_(dnnConversionExecute)(cvtPrmt, src->tensor->storage->data, pTensor->storage->data), err );
+    //src->tensor->storage->data =  cvtbuffer;
   }
   src->tensor->flag = src->flagBackup;
-  THTensor_(copy)(pTensor, src->tensor);
+//  THTensor_(copy)(pTensor, src->tensor);
 }
 
 
