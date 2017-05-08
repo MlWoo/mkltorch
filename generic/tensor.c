@@ -242,9 +242,9 @@ static int torch_mkl_(copyBacktoTH)(lua_State *L)
   //printf("torch_mkl_(copyBacktoTH) 2 \n");
   void *src;
   void *dst;
-  if( (src = luaT_toudata(L, 1, "torch.MKLFloatTensor")) && (dst = luaT_toudata(L, 1, "torch.FloatTensor")) )
+  if( (src = luaT_toudata(L, 1, "torch.MKLFloatTensor")) && (dst = luaT_toudata(L, 2, "torch.FloatTensor")) )
     THMKLFloatTensorcopyBacktoTH(dst, src);
-  else if( (src = luaT_toudata(L, 1, "torch.MKLDoubleTensor")) && (dst = luaT_toudata(L, 1, "torch.DoubleTensor")) )
+  else if( (src = luaT_toudata(L, 1, "torch.MKLDoubleTensor")) && (dst = luaT_toudata(L, 2, "torch.DoubleTensor")) )
     THMKLDoubleTensorcopyBacktoTH(dst, src);
   else{
     luaL_typerror(L, 1, "torch.*Tensor");
