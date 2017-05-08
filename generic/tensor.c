@@ -5,31 +5,37 @@
 ////////////////////////////////////////////////////////////////////////
 dnnError_t  TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
 {
-  long usrPrmt = 0;
+
   dnnLayout_t mkldnnLayout = (dnnLayout_t)(pTensor->mkldnnLayout);
-  assert(mkldnnLayout != 0);
-  dnnLayout_t usrLayout = 0;
-  dnnPrimitive_t* cvtPrmt = NULL;
+  assert(mkldnnLayout != NULL);
+  dnnLayout_t usrLayout = NULL;
+  dnnPrimitive_t cvtPrmt = NULL;
   real* cvtBuffer = NULL;
   int dimension = 4;
-/*
+
 size_t N = pTensor->tensor->size[0];
 size_t C = pTensor->tensor->size[1];
 size_t H = pTensor->tensor->size[2];
 size_t W = pTensor->tensor->size[3];
-size_t dimension = 4;
-size_t inputSize[] = {W,H,C,N};
-size_t strides[dimension] = { 1, inW, inH * inW, inC * inH * inW };
-*/
+//size_t dimension = 4;
+size_t Size[] = {W,H,C,N};
+size_t strides[] = { 1, W, H * W, C * H * W };
+
   dnnError_t err;
-  CHECK_ERR( MKLDNN_(dnnLayoutCreate)((dnnLayout_t*)&usrLayout, dimension, pTensor->tensor->size, pTensor->tensor->stride) , err );
+  CHECK_ERR( MKLDNN_(dnnLayoutCreate)((dnnLayout_t*)&usrLayout, dimension, Size, strides) , err );
+  printf("createWorkspace  mkldnnLayout =  %10d  usrLayout = %10d\n", mkldnnLayout, usrLayout);
 
   if (! MKLDNN_(dnnLayoutCompare)((dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout)) {
-    CHECK_ERR( MKLDNN_(dnnConversionCreate)((dnnPrimitive_t*)cvtPrmt, (dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout), err );
+	 printf("createWorkspace %4d \n", __LINE__);
+    CHECK_ERR( MKLDNN_(dnnConversionCreate)((dnnPrimitive_t*)&cvtPrmt, (dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout), err );
+    printf("createWorkspace %4d \n", __LINE__);
     CHECK_ERR( MKLDNN_(dnnAllocateBuffer)((void**)&cvtBuffer, (dnnLayout_t)usrLayout), err );
+    printf("createWorkspace %4d \n", __LINE__);
   }
-  printf("workspace primitives = %p    buffer = %p", cvtPrmt, cvtBuffer);
+ 
+  printf("workspace primitives = %p    buffer = %p\n", cvtPrmt, cvtBuffer);
   pTensor->workspace[0] = (long)cvtPrmt;
+  printf("createWorkspace %4d \n",  __LINE__);
   pTensor->workspace[1] = (long)cvtBuffer;
 
   return E_SUCCESS;
@@ -43,18 +49,26 @@ static int TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
   if ((0 == src->workspace[0]) && (0 == src->workspace[1])){
 	TH_MKL_(createWorkspace)(src);
   }
-  assert(0 != src->workspace[0]*src->workspace[1]);
-  THTensor_(resizeAs)(pTensor, src->tensor); 
-  dnnError_t err;
-  dnnPrimitive_t cvtPrmt = (dnnPrimitive_t)src->workspace[0];
-//  real * cvtbuffer = (real *)src->workspace[1];
-	
-  if( cvtPrmt != 0)
+  if (0 != src->workspace[0]*src->workspace[1])
   {
-    CHECK_ERR( MKLDNN_(dnnConversionExecute)(cvtPrmt, src->tensor->storage->data, pTensor->storage->data), err );
-    //src->tensor->storage->data =  cvtbuffer;
+    THTensor_(resizeAs)(pTensor, src->tensor); 
+    dnnError_t err;
+    dnnPrimitive_t cvtPrmt = (dnnPrimitive_t)src->workspace[0];
+    //  real * cvtbuffer = (real *)src->workspace[1];
+	
+    if( cvtPrmt != 0)
+    {
+      CHECK_ERR( MKLDNN_(dnnConversionExecute)(cvtPrmt, src->tensor->storage->data, pTensor->storage->data), err );
+      //src->tensor->storage->data =  cvtbuffer;
+    }
+    src->tensor->flag = src->flagBackup;
   }
-  src->tensor->flag = src->flagBackup;
+  else
+  {
+    TH_MKL_(copyBacktoTH)(pTensor, src);
+  }
+  
+
 //  THTensor_(copy)(pTensor, src->tensor);
 }
 
@@ -144,6 +158,7 @@ static int TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src)
 
 static int TH_MKL_(TH2MKL)(THMKLTensor * pTensor, THTensor * src)
 {
+  printf("TH_MKL_(TH2MKL) called, pTensor = %p, src = %p\n", pTensor, src);
   TH_MKL_(copyFromTH)(pTensor, src);
 }
 
@@ -157,7 +172,7 @@ static int TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src)
 
 static int TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
 {
-  printf("TH_MKL_(copyBacktoTH) called, pTensor = %p, src = %p\n", pTensor, src);
+  printf("TH_MKL_(MKL2TH) called, pTensor = %p, src = %p layout = %4d \n", pTensor, src, src->mkldnnLayout);
   
   if(0 == src->mkldnnLayout)
     TH_MKL_(copyBacktoTH)(pTensor, src);
@@ -211,6 +226,46 @@ static int torch_mkl_(free)(lua_State *L)
 
 
 
+static int torch_mkl_(TH2MKL)(lua_State *L)
+{
+  //printf("copyFromTH 0 \n");
+  //THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  //printf("copyFromTH 1 \n");
+  void *src;
+  void *dst;
+  if( (src = luaT_toudata(L, 2, "torch.FloatTensor")) && (dst = luaT_toudata(L, 1, "torch.MKLFloatTensor"))){
+    printf("copyFromTH 2 \n");
+    THMKLFloatTensorTH2MKL(dst, src);
+    
+    }
+  /*else if( (src = luaT_toudata(L, 2, "torch.DoubleTensor")) && (dst = luaT_toudata(L, 1, "torch.MKLDoubleTensor"))){
+	  printf("copyFromTH 3 \n");
+    THMKLDoubleTensorTH2MKL(dst, src);
+    }*/
+  else{
+    luaL_typerror(L, 2, "torch.*Tensor");
+    }
+  lua_settop(L, 1);
+  return 1;
+}
+
+static int torch_mkl_(MKL2TH)(lua_State *L)
+{
+  //printf("torch_mkl_(copyBacktoTH) 1 \n");
+  //THTensor* pTensor = luaT_checkudata(L, 2, torch_tensor);
+  //printf("torch_mkl_(copyBacktoTH) 2 \n");
+  void *src;
+  void *dst;
+  if( (src = luaT_toudata(L, 1, "torch.MKLFloatTensor")) && (dst = luaT_toudata(L, 2, "torch.FloatTensor")) )
+    THMKLFloatTensorMKL2TH(dst, src);
+  /*else if( (src = luaT_toudata(L, 1, "torch.MKLDoubleTensor")) && (dst = luaT_toudata(L, 2, "torch.DoubleTensor")) )
+    THMKLDoubleTensorTH2MKL(dst, src);*/
+  else{
+    luaL_typerror(L, 1, "torch.*Tensor");
+    }
+  lua_settop(L, 2);
+  return 2;
+}
 
 static int torch_mkl_(copyFromTH)(lua_State *L)
 {
@@ -271,7 +326,9 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   //{"type", torch_mkl_(type)},
  // {"__len__", torch_mpi_(size)},
   {"copyFromTH", torch_mkl_(copyFromTH)},
-  {"copyBacktoTH", torch_mkl_(copyBacktoTH)},
+  {"copyFromTH", torch_mkl_(copyFromTH)},
+  {"MKL2TH", torch_mkl_(MKL2TH)},
+  {"TH2MKL", torch_mkl_(TH2MKL)},
  // {"clone", torch_mpi_(clone)},               //deep copy
   {NULL, NULL}
 };
