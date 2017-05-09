@@ -3,7 +3,7 @@
 #else
 
 ////////////////////////////////////////////////////////////////////////
-dnnError_t  TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
+void TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
 {
 
   dnnLayout_t mkldnnLayout = (dnnLayout_t)(pTensor->mkldnnLayout);
@@ -33,13 +33,10 @@ dnnError_t  TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
   pTensor->workspace[0] = (long)cvtPrmt;
   pTensor->workspace[1] = (long)cvtBuffer;
 
-  return E_SUCCESS;
-
 }
 
-static int TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
+void TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
 {
-  
   //pTensor->size = src->size;
   if ((0 == src->workspace[0]) && (0 == src->workspace[1])){
 	TH_MKL_(createWorkspace)(src);
@@ -62,9 +59,16 @@ static int TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
   {
     TH_MKL_(copyBacktoTH)(pTensor, src);
   }
-  
+}
 
-//  THTensor_(copy)(pTensor, src->tensor);
+//////////////////////////////////////////////////////////////////////
+int TH_MKL_(nElement)(const THMKLTensor *self)
+{
+	//printf("data --permission-----------refcount = %4d\n", self->freeFlag);
+  if( self->tensor && self->tensor->storage)
+    return THTensor_(nElement)(self->tensor);
+  else
+    return 0;
 }
 
 
@@ -78,7 +82,7 @@ real* TH_MKL_(data)(THMKLTensor *self)
     return NULL;
 }
 
-real* TH_MKL_(setMKLdata)(THMKLTensor *self, real * mkldata)
+void TH_MKL_(setMKLdata)(THMKLTensor *self, real * mkldata)
 {
   //mkldata is allocated by MKLDNN, should not be freed by torch
   //free original torch buffer
@@ -100,6 +104,7 @@ void TH_MKL_(resize4d)(THMKLTensor *self, long size0, long size1, long size2, lo
 
   self->size = self->tensor->size;	
 }
+
 void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
 {
 	//printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
@@ -139,7 +144,7 @@ void TH_MKL_(free)(THMKLTensor *self)
 }
 
 
-static int TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src)
+void TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src)
 {
 
   printf("TH_MKL_(copyFromTH) called, pTensor = %p, src = %p\n", pTensor, src);
@@ -151,13 +156,13 @@ static int TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src)
   pTensor->workspace[1] = 0;
 }
 
-static int TH_MKL_(TH2MKL)(THMKLTensor * pTensor, THTensor * src)
+void TH_MKL_(TH2MKL)(THMKLTensor * pTensor, THTensor * src)
 {
   printf("TH_MKL_(TH2MKL) called, pTensor = %p, src = %p\n", pTensor, src);
   TH_MKL_(copyFromTH)(pTensor, src);
 }
 
-static int TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src)
+void TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src)
 {
  
   THTensor_(resizeAs)(pTensor, src->tensor);  
@@ -165,7 +170,7 @@ static int TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src)
   THTensor_(copy)(pTensor, src->tensor);
 }
 
-static int TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
+void TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
 {
   printf("TH_MKL_(MKL2TH) called, pTensor = %p, src = %p layout = %ld \n", pTensor, src, src->mkldnnLayout);
   
@@ -177,6 +182,15 @@ static int TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
 
 
 //////////////////////////////////////////////////////////////////////
+
+static int torch_mkl_(nElement)(lua_State *L)
+{
+  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  printf("nElement -- recycle heap memory pTensor = %p\n", pTensor);
+  printf("nElement -- recycle heap memory tensor  = %p\n", pTensor->tensor);
+  luaT_pushinteger(L, TH_MKL_(nElement)(pTensor));
+  return 1;
+}
 
 static int torch_mkl_(new)(lua_State *L)
 {
@@ -197,7 +211,7 @@ static int torch_mkl_(new)(lua_State *L)
   printf("construct THMKLTensor = %p\n", pTensor);
   printf("construct tensor      = %p\n", pTensor->tensor);
 	
-	return 1;
+  return 1;
 }
 
 static int torch_mkl_(retain)(lua_State *L)
@@ -209,7 +223,6 @@ static int torch_mkl_(retain)(lua_State *L)
   return 0;
 }
 
-
 static int torch_mkl_(free)(lua_State *L)
 {
   THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
@@ -218,8 +231,6 @@ static int torch_mkl_(free)(lua_State *L)
   TH_MKL_(free)(pTensor);
   return 0;
 }
-
-
 
 static int torch_mkl_(TH2MKL)(lua_State *L)
 {
@@ -240,8 +251,8 @@ static int torch_mkl_(TH2MKL)(lua_State *L)
   else{
     luaL_typerror(L, 2, "torch.*Tensor");
     }
-  lua_settop(L, 1);
-  return 1;
+  lua_settop(L, 1);   //reserve stack bottom, aka, the MKL tensor
+  return 1;           // return the MKL tensor right!
 }
 
 static int torch_mkl_(MKL2TH)(lua_State *L)
@@ -256,10 +267,11 @@ static int torch_mkl_(MKL2TH)(lua_State *L)
   else if( (src = luaT_toudata(L, 1, "torch.MKLDoubleTensor")) && (dst = luaT_toudata(L, 2, "torch.DoubleTensor")) )
     THMKLDoubleTensorTH2MKL(dst, src);
   else{
-    luaL_typerror(L, 1, "torch.*Tensor");
+    luaL_typerror(L, 1, "torch.MKL*Tensor");
     }
-  lua_settop(L, 2);
-  return 2;
+  //lua_settop(L, 2);
+  lua_remove(L, 1);   // remove the stack bottom, aka, the TH Tensor is reserved
+  return 1;
 }
 
 static int torch_mkl_(copyFromTH)(lua_State *L)
@@ -272,7 +284,7 @@ static int torch_mkl_(copyFromTH)(lua_State *L)
   if( (src = luaT_toudata(L, 2, "torch.FloatTensor")) && (dst = luaT_toudata(L, 1, "torch.MKLFloatTensor"))){
     printf("copyFromTH 2 \n");
     THMKLFloatTensorcopyFromTH(dst, src);
-    
+   
     }
   else if( (src = luaT_toudata(L, 2, "torch.DoubleTensor")) && (dst = luaT_toudata(L, 1, "torch.MKLDoubleTensor"))){
 	  printf("copyFromTH 3 \n");
@@ -299,11 +311,10 @@ static int torch_mkl_(copyBacktoTH)(lua_State *L)
   else{
     luaL_typerror(L, 1, "torch.*Tensor");
     }
-  lua_settop(L, 2);
-  return 2;
+  //lua_settop(L, 2);
+  lua_remove(L, 1);
+  return 1;
 }
-
-
 
 
 static int torch_mkl_(factory)(lua_State *L)
@@ -318,6 +329,7 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"retain", torch_mkl_(retain)},
   {"new", torch_mkl_(new)},
   {"free", torch_mkl_(free)},
+  {"nElement", torch_mkl_(nElement)},
   //{"type", torch_mkl_(type)},
  // {"__len__", torch_mpi_(size)},
   {"copyFromTH", torch_mkl_(copyFromTH)},

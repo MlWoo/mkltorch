@@ -17,12 +17,13 @@ typedef struct THMKLTensor
 
 #define MKL_TENSOR_FLAG  32
 
-static int TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src);
-static int TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src);
-static int TH_MKL_(TH2MKL)(THMKLTensor * pTensor, THTensor * src);
-static int TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src);
+void TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src);
+void TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src);
+void TH_MKL_(TH2MKL)(THMKLTensor * pTensor, THTensor * src);
+void TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src);
 void TH_MKL_(resize4d)(THMKLTensor *self, long size0, long size1, long size2, long size3);
 real* TH_MKL_(data)(THMKLTensor *self);
+int TH_MKL_(nElement)(const THMKLTensor *self);
 /*
 dnnError_t  TH_MKL_(createWorkspace)(THMKLTensor* pTensor);
 dnnError_t MKLDNN_(dnnLayoutCreate)(dnnLayout_t *pLayout, size_t dimension, const size_t size[], const size_t strides[]);
