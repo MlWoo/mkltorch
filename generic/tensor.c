@@ -194,7 +194,7 @@ static int torch_mkl_(nElement)(lua_State *L)
 
 static int torch_mkl_(new)(lua_State *L)
 {
-  printf("enter new tensor\n");
+  //printf("enter new tensor\n");
   THMKLTensor* pTensor = THAlloc(sizeof(THMKLTensor));
   if(pTensor == NULL){
     printf("Cannot allocate memory for mklTensor\n");
