@@ -69,6 +69,12 @@ local function getType(type)
              end
 end
 
+local function doNothing()
+   return function(self)
+             return self
+          end
+end
+
 for type, SrcType in pairs(TensorTypes) do
 	local metatable = torch.getmetatable(SrcType)
 	local MKLType = TH2MKL[type]
@@ -86,6 +92,8 @@ for type, SrcType in pairs(MKLTensorTypes) do
     rawset(metatable, 'th', Tensor__MKL2TH__converter(TensorTypes[THType]))
     rawset(metatable, THType, Tensor__MKL2TH__converter(TensorTypes[THType]))
     rawset(metatable, 'type', getType(SrcType))
+    rawset(metatable, 'mkl', doNothing())
+
 end
 
 
