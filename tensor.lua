@@ -26,7 +26,7 @@ local MKL2TH = {
    mklDouble = 'double' ,
 --   mklLong   = 'long'
 }
-print('outside')
+--print('outside')
 
 
 local function Tensor__TH2MKL__converter(type)
@@ -51,10 +51,10 @@ local function Tensor__MKL2TH__converter(type)
              local current = torch.typename(self)
              if not type then return current end
              if type ~= current then
-               print("Tensor__MKL2TH__converter, type = ", type,", current = ",current)
+               --print("Tensor__MKL2TH__converter, type = ", type,", current = ",current)
                local new = torch.getmetatable(type).new()
-               print(new:type())
-               print(self:type())
+               --print(new:type())
+               --print(self:type())
                self:MKL2TH(new)
                return new
              else
@@ -86,9 +86,9 @@ end
 for type, SrcType in pairs(MKLTensorTypes) do
 	local metatable = torch.getmetatable(SrcType)
 	local THType = MKL2TH[type]
-	print("SrcType = ", SrcType)
-	print("type = ", type)
-	print("THType = ", THType)
+	--print("SrcType = ", SrcType)
+	--print("type = ", type)
+	--print("THType = ", THType)
     rawset(metatable, 'th', Tensor__MKL2TH__converter(TensorTypes[THType]))
     rawset(metatable, THType, Tensor__MKL2TH__converter(TensorTypes[THType]))
     rawset(metatable, 'type', getType(SrcType))

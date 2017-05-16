@@ -22,14 +22,14 @@ void TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
 
   dnnError_t err;
   CHECK_ERR( MKLDNN_(dnnLayoutCreate)((dnnLayout_t*)&usrLayout, dimension, Size, strides) , err );
-  printf("createWorkspace  mkldnnLayout =  %p  usrLayout = %p\n", mkldnnLayout, usrLayout);
+  //printf("createWorkspace  mkldnnLayout =  %p  usrLayout = %p\n", mkldnnLayout, usrLayout);
 
   if (! MKLDNN_(dnnLayoutCompare)((dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout)) {
     CHECK_ERR( MKLDNN_(dnnConversionCreate)((dnnPrimitive_t*)&cvtPrmt, (dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout), err );
     CHECK_ERR( MKLDNN_(dnnAllocateBuffer)((void**)&cvtBuffer, (dnnLayout_t)usrLayout), err );
   }
  
-  printf("workspace primitives = %p    buffer = %p\n", cvtPrmt, cvtBuffer);
+  //printf("workspace primitives = %p    buffer = %p\n", cvtPrmt, cvtBuffer);
   pTensor->workspace[0] = (long)cvtPrmt;
   pTensor->workspace[1] = (long)cvtBuffer;
 
@@ -187,8 +187,8 @@ void TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
 static int torch_mkl_(nElement)(lua_State *L)
 {
   THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  printf("nElement -- pTensor = %p\n", pTensor);
-  printf("nElement -- tensor  = %p\n", pTensor->tensor);
+  //printf("nElement -- pTensor = %p\n", pTensor);
+  //printf("nElement -- tensor  = %p\n", pTensor->tensor);
   luaT_pushinteger(L, TH_MKL_(nElement)(pTensor));
   return 1;
 }
@@ -208,8 +208,8 @@ static int torch_mkl_(new)(lua_State *L)
   pTensor->workspace[1] = 0;
 
   luaT_pushudata(L, pTensor, torch_mkl_tensor);    
-  printf("construct THMKLTensor = %p\n", pTensor);
-  printf("construct tensor      = %p\n", pTensor->tensor);
+  //printf("construct THMKLTensor = %p\n", pTensor);
+  //printf("construct tensor      = %p\n", pTensor->tensor);
 	
   return 1;
 }
@@ -217,8 +217,8 @@ static int torch_mkl_(new)(lua_State *L)
 static int torch_mkl_(retain)(lua_State *L)
 {
   THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  printf("retain -- recycle heap memory pTensor = %p\n", pTensor);
-  printf("retain -- recycle heap memory tensor  = %p\n", pTensor->tensor);
+  //printf("retain -- recycle heap memory pTensor = %p\n", pTensor);
+  //printf("retain -- recycle heap memory tensor  = %p\n", pTensor->tensor);
   TH_MKL_(retain)(pTensor);
   return 0;
 }
@@ -226,8 +226,8 @@ static int torch_mkl_(retain)(lua_State *L)
 static int torch_mkl_(free)(lua_State *L)
 {
   THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  printf("free -- recycle heap memory pTensor = %p\n", pTensor);
-  printf("free -- recycle heap memory tensor  = %p\n", pTensor->tensor);
+  //printf("free -- recycle heap memory pTensor = %p\n", pTensor);
+  //printf("free -- recycle heap memory tensor  = %p\n", pTensor->tensor);
   TH_MKL_(free)(pTensor);
   return 0;
 }
