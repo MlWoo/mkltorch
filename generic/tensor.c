@@ -101,7 +101,8 @@ void TH_MKL_(resize4d)(THMKLTensor *self, long size0, long size1, long size2, lo
 	//printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
   long size[4] = {size0, size1, size2, size3};
   THTensor_(resizeNd)(self->tensor, 4, size, NULL);
-
+  self->tensor->flag = MKL_TENSOR_FLAG;
+  self->tensor->refcount = 2;
   self->size = self->tensor->size;	
 }
 
