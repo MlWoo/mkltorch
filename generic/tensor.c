@@ -193,6 +193,24 @@ static int torch_mkl_(nElement)(lua_State *L)
   return 1;
 }
 
+static int torch_mkl_(dim)(lua_State *L)
+{
+  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  //printf("nElement -- pTensor = %p\n", pTensor);
+  //printf("nElement -- tensor  = %p\n", pTensor->tensor);
+  luaT_pushinteger(L, THTensor_(nDimension)(pTensor->tensor));
+  return 1;
+}
+
+static int torch_mkl_(size)(lua_State *L)
+{
+  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  //printf("nElement -- pTensor = %p\n", pTensor);
+  //printf("nElement -- tensor  = %p\n", pTensor->tensor);
+  //luaT_pushinteger(L, T(pTensor->tensor->size));
+  return 1;
+}
+
 static int torch_mkl_(new)(lua_State *L)
 {
   //printf("enter new tensor\n");
@@ -332,6 +350,8 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"copyFromTH", torch_mkl_(copyFromTH)},
   {"MKL2TH", torch_mkl_(MKL2TH)},
   {"TH2MKL", torch_mkl_(TH2MKL)},
+  {"dim", torch_mkl_(dim)},
+  {"size", torch_mkl_(size)},
  // {"clone", torch_mpi_(clone)},               //deep copy
   {NULL, NULL}
 };
