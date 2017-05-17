@@ -53,8 +53,6 @@ local function Tensor__MKL2TH__converter(type)
              if type ~= current then
                --print("Tensor__MKL2TH__converter, type = ", type,", current = ",current)
                local new = torch.getmetatable(type).new()
-               --print(new:type())
-               --print(self:type())
                self:MKL2TH(new)
                return new
              else
@@ -97,4 +95,22 @@ for type, SrcType in pairs(MKLTensorTypes) do
 end
 
 
+local query_operations = {
+	'dim' ,
+	'size' ,
+}
+
+--[[
+local function Tensor__MKL__Query_Op(op)
+  return function(self)
+  
+end
+
+for type, SrcType in pairs(MKLTensorTypes) do
+  local metatable = torch.getmetatable(SrcType)
+  for _, query_op in pairs(query_operations) do
+    rawset(metatable, query_op, Tensor__MKL__query_Op(query_op)
+  end
+end
+]]--
 

@@ -182,6 +182,7 @@ void TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
 }
 
 
+
 //////////////////////////////////////////////////////////////////////
 
 static int torch_mkl_(nElement)(lua_State *L)
@@ -202,14 +203,26 @@ static int torch_mkl_(dim)(lua_State *L)
   return 1;
 }
 
+/*
 static int torch_mkl_(size)(lua_State *L)
 {
-  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  //printf("nElement -- pTensor = %p\n", pTensor);
-  //printf("nElement -- tensor  = %p\n", pTensor->tensor);
-  //luaT_pushinteger(L, T(pTensor->tensor->size));
+  THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  if(lua_isnumber(L,2))
+  {
+    int dim = luaL_checkint(L, 2)-1;
+    THArgCheck(dim >= 0 && dim < pTensor->tensor->nDimension, 2, "dimension %d out of range of %dD tensor",
+        dim+1, THTensor_(nDimension)(pTensor->tensor));
+    luaT_pushlong(L, tensor->size[dim]);
+  }
+  else
+  {
+    THLongStorage *size = THTensor_(newSizeOf)(pTensor->tensor);
+    luaT_pushudata(L, size, "torch.LongStorage");
+  }
   return 1;
+
 }
+*/
 
 static int torch_mkl_(new)(lua_State *L)
 {
@@ -290,6 +303,8 @@ static int torch_mkl_(MKL2TH)(lua_State *L)
   return 1;
 }
 
+
+
 static int torch_mkl_(copyFromTH)(lua_State *L)
 {
   //printf("copyFromTH 0 \n");
@@ -330,7 +345,25 @@ static int torch_mkl_(copyBacktoTH)(lua_State *L)
   return 1;
 }
 
+/*
+static int torch_mkl_(isSeamless)(lua_State *L)
+{
+	THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+	if (0 == pTensor->mkldnnLayout)
+	  lua_pushboolean(L, 1);
+	else
+	  lua_pushboolean(L, 0);
+	return 1;
+}
 
+static int torch_mkl_(directTH)(lua_State *L)
+{
+	THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+	THTensor *tensor = pTensor->tensor;
+	luaT_pushudata(L, tensor, torch_Tensor);
+	return 1;
+}
+*/
 static int torch_mkl_(factory)(lua_State *L)
 {
   THMKLTensor* pTensor = THAlloc(sizeof(THMKLTensor));
@@ -351,7 +384,9 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"MKL2TH", torch_mkl_(MKL2TH)},
   {"TH2MKL", torch_mkl_(TH2MKL)},
   {"dim", torch_mkl_(dim)},
-  {"size", torch_mkl_(size)},
+//  {"isSeamless",  torch_mkl_(isSeamless)},
+//  {"directTH",  torch_mkl_(directTH)}, 
+//  {"size", torch_mkl_(size)},
  // {"clone", torch_mpi_(clone)},               //deep copy
   {NULL, NULL}
 };
