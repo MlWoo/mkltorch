@@ -3,7 +3,7 @@ MKLDNN library is designed to accelerate Deep Neural Network(DNN)
 computation on CPU, in particular Intel® Xeon processors (HSW, 
 BDW, Xeon Phi). The repo of mkltorch provides mklTensor to be called
  in MKLDNN library in [Torch7](http://torch.ch) for convenience .
-# relation with torch
+# Relation with torch
 __Torch__ is the main package in Torch7 where data structures for 
 multi-dimensional tensors and mathematical operationsover these are 
 defined. Additionally, it provides many utilities for accessing files,
@@ -33,7 +33,7 @@ __NOTE:__
 
   * mklTensor doesn't provide any basic mathematical operations. You can 
 transfer it to a regular tensor if necessary.
-  * Any convertions only occur between the tweo types tentors which have
+  * Any convertions only occur between the two types tentors which have
  same data type.In other word, a regular tensor with float type only can 
 be converted to MKLFloatTensor. It is impossible to get a corresponding 
 MKLDoubleTensor.
@@ -42,21 +42,33 @@ MKLDoubleTensor.
 
 ## mklTensor Library ##
 It offers mklTensor some basic operation to create, copy, convert or query some infos.
-   * new()               create a new mklTensor and return it.
-   * th()                convert a mklTensor to the regular tensor and return the regular tensor. 
-   * float()             convert a MKLFloatTensor to the regular float tensor and return the regular float tensor.
-   * double()            convert a MKLDoubleTensor to the regular double tensor and return the regular double tensor.
-   * MKL2TH(A)           convert a mklTensor to the regular tensor and return the regular tensor. And also assigned it to A
-   * TH2MKL(A)           convert a regular tensor A to the mklTensor and return the mklTensor. 
-   * nElement()          Return the ammount of the mklTensor.
-   * directTH()          fetch the tensor from a MKLFloatTensor. It is __NOT__ recommended to use this method by user
-                         in order to avoid potential problems.
-   * size([dim])         Returns the size of the specified dimension dim or the sizes of all dimensions if param dim is ignored.        
+   * new()               
+     create a new mklTensor and return it.
+   * th()                
+     convert a mklTensor to the regular tensor and return the regular tensor. 
+   * float()             
+     convert a MKLFloatTensor to the regular float tensor and return the regular float tensor.
+   * double()            
+     convert a MKLDoubleTensor to the regular double tensor and return the regular double tensor.
+   * MKL2TH(A)           
+     convert a mklTensor to the regular tensor and return the regular tensor. And also assigned it to A
+   * TH2MKL(A)           
+     convert a regular tensor A to the mklTensor and return the mklTensor. 
+   * nElement()          
+     Return the ammount of the mklTensor.
+   * directTH()          
+     fetch the tensor from a MKLFloatTensor. It is __NOT__ recommended to use this method by user
+     in order to avoid potential problems.
+   * size([dim])         
+     Returns the size of the specified dimension dim or the sizes of all dimensions if param dim is ignored.        
 
 
 The package also provide a regular tensor conversion methods to get the corresponding mklTensor.
-   * mkl()               convert a regular tensor to the mklTensor and return the mklTensor.
-   * mklFloat()          convert a regular float tensor to the MKLFloatTensor and return the MKLFloatTensor.
-   * mklDouble()         convert a regular double tensor to the MKLDoubleTensor and return the MKLDoubleTensor.
+   * mkl()               
+     convert a regular tensor to the mklTensor and return the mklTensor.
+   * mklFloat()          
+     convert a regular float tensor to the MKLFloatTensor and return the MKLFloatTensor.
+   * mklDouble()         
+     convert a regular double tensor to the MKLDoubleTensor and return the MKLDoubleTensor.
 
 
