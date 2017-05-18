@@ -5,7 +5,6 @@
 ////////////////////////////////////////////////////////////////////////
 void TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
 {
-
   dnnLayout_t mkldnnLayout = (dnnLayout_t)(pTensor->mkldnnLayout);
   assert(mkldnnLayout != NULL);
   dnnLayout_t usrLayout = NULL;
@@ -61,11 +60,19 @@ void TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
   }
 }
 
-
+int TH_MKL_(nElement)(const THMKLTensor *self)
+{
+  //printf("data --permission-----------refcount = %4d\n", self->freeFlag);
+  if( self->tensor && self->tensor->storage)
+    return THTensor_(nElement)(self->tensor);
+  else
+    return 0;
+}
+ 
 //////////////////////////////////////////////////////////////////////
 real* TH_MKL_(data)(THMKLTensor *self)
 {
-	//printf("data --permission-----------refcount = %4d\n", self->freeFlag);
+  //printf("data --permission-----------refcount = %4d\n", self->freeFlag);
   if( self->tensor && self->tensor->storage)
     return (self->tensor->storage->data+self->tensor->storageOffset);
   else
@@ -167,8 +174,6 @@ void TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
     TH_MKL_(convertToTH)(pTensor, src);
 }
 
-
-
 //////////////////////////////////////////////////////////////////////
 
 
@@ -213,14 +218,10 @@ static int torch_mkl_(free)(lua_State *L)
 
 static int torch_mkl_(TH2MKL)(lua_State *L)
 {
-  //printf("copyFromTH 0 \n");
-  //THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  //printf("copyFromTH 1 \n");
   void *src;
   void *dst;
   if( (src = luaT_toudata(L, 2, "torch.FloatTensor")) && (dst = luaT_toudata(L, 1, "torch.MKLFloatTensor"))){
-    THMKLFloatTensorTH2MKL(dst, src);
-    
+    THMKLFloatTensorTH2MKL(dst, src);   
     }
   else if( (src = luaT_toudata(L, 2, "torch.DoubleTensor")) && (dst = luaT_toudata(L, 1, "torch.MKLDoubleTensor"))){
     THMKLDoubleTensorTH2MKL(dst, src);
@@ -234,9 +235,6 @@ static int torch_mkl_(TH2MKL)(lua_State *L)
 
 static int torch_mkl_(MKL2TH)(lua_State *L)
 {
-  //printf("torch_mkl_(copyBacktoTH) 1 \n");
-  //THTensor* pTensor = luaT_checkudata(L, 2, torch_tensor);
-  //printf("torch_mkl_(copyBacktoTH) 2 \n");
   void *src;
   void *dst;
   if( (src = luaT_toudata(L, 1, "torch.MKLFloatTensor")) && (dst = luaT_toudata(L, 2, "torch.FloatTensor")) )
@@ -255,9 +253,6 @@ static int torch_mkl_(MKL2TH)(lua_State *L)
 
 static int torch_mkl_(copyFromTH)(lua_State *L)
 {
-  //printf("copyFromTH 0 \n");
-  //THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  //printf("copyFromTH 1 \n");
   void *src;
   void *dst;
   if( (src = luaT_toudata(L, 2, "torch.FloatTensor")) && (dst = luaT_toudata(L, 1, "torch.MKLFloatTensor"))){
@@ -276,9 +271,6 @@ static int torch_mkl_(copyFromTH)(lua_State *L)
 
 static int torch_mkl_(copyBacktoTH)(lua_State *L)
 {
-  //printf("torch_mkl_(copyBacktoTH) 1 \n");
-  //THTensor* pTensor = luaT_checkudata(L, 2, torch_tensor);
-  //printf("torch_mkl_(copyBacktoTH) 2 \n");
   void *src;
   void *dst;
   if( (src = luaT_toudata(L, 1, "torch.MKLFloatTensor")) && (dst = luaT_toudata(L, 2, "torch.FloatTensor")) )
