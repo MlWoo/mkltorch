@@ -291,9 +291,7 @@ static int torch_mkl_(resizeAs)(lua_State *L)
 {
   THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
-  printf("resizeAs 1, src size0 = %d\n", src->size[0]);
   TH_MKL_(resizeAs)(pTensor, src);
-  printf("resizeAs 2 \n");
   return 1;
 }
 
@@ -309,7 +307,7 @@ static int torch_mkl_(add)(lua_State *L)
 {
   THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
-  //THTensor_(add)(pTensor->tensor, src->tensor);
+  THTensor_(cadd)(pTensor->tensor,pTensor->tensor,1, src->tensor);
   return 1;
 }
 
