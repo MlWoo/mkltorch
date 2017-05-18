@@ -61,16 +61,6 @@ void TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
   }
 }
 
-//////////////////////////////////////////////////////////////////////
-int TH_MKL_(nElement)(const THMKLTensor *self)
-{
-	//printf("data --permission-----------refcount = %4d\n", self->freeFlag);
-  if( self->tensor && self->tensor->storage)
-    return THTensor_(nElement)(self->tensor);
-  else
-    return 0;
-}
-
 
 //////////////////////////////////////////////////////////////////////
 real* TH_MKL_(data)(THMKLTensor *self)
@@ -115,10 +105,6 @@ void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
     self->size = self->tensor->size;	
 }
 
-void TH_MKL_(type)(THMKLTensor *self)
-{
-  
-}
 
 //----------------------------------------------------------------------------
 void TH_MKL_(retain)(THMKLTensor *self)
@@ -185,44 +171,6 @@ void TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
 
 //////////////////////////////////////////////////////////////////////
 
-static int torch_mkl_(nElement)(lua_State *L)
-{
-  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  //printf("nElement -- pTensor = %p\n", pTensor);
-  //printf("nElement -- tensor  = %p\n", pTensor->tensor);
-  luaT_pushinteger(L, TH_MKL_(nElement)(pTensor));
-  return 1;
-}
-
-static int torch_mkl_(dim)(lua_State *L)
-{
-  THMKLTensor* pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  //printf("nElement -- pTensor = %p\n", pTensor);
-  //printf("nElement -- tensor  = %p\n", pTensor->tensor);
-  luaT_pushinteger(L, THTensor_(nDimension)(pTensor->tensor));
-  return 1;
-}
-
-/*
-static int torch_mkl_(size)(lua_State *L)
-{
-  THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
-  if(lua_isnumber(L,2))
-  {
-    int dim = luaL_checkint(L, 2)-1;
-    THArgCheck(dim >= 0 && dim < pTensor->tensor->nDimension, 2, "dimension %d out of range of %dD tensor",
-        dim+1, THTensor_(nDimension)(pTensor->tensor));
-    luaT_pushlong(L, tensor->size[dim]);
-  }
-  else
-  {
-    THLongStorage *size = THTensor_(newSizeOf)(pTensor->tensor);
-    luaT_pushudata(L, size, "torch.LongStorage");
-  }
-  return 1;
-
-}
-*/
 
 static int torch_mkl_(new)(lua_State *L)
 {
@@ -345,7 +293,7 @@ static int torch_mkl_(copyBacktoTH)(lua_State *L)
   return 1;
 }
 
-/*
+
 static int torch_mkl_(isSeamless)(lua_State *L)
 {
 	THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
@@ -363,7 +311,7 @@ static int torch_mkl_(directTH)(lua_State *L)
 	luaT_pushudata(L, tensor, torch_Tensor);
 	return 1;
 }
-*/
+
 static int torch_mkl_(factory)(lua_State *L)
 {
   THMKLTensor* pTensor = THAlloc(sizeof(THMKLTensor));
@@ -376,17 +324,14 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"retain", torch_mkl_(retain)},
   {"new", torch_mkl_(new)},
   {"free", torch_mkl_(free)},
-  {"nElement", torch_mkl_(nElement)},
   //{"type", torch_mkl_(type)},
  // {"__len__", torch_mpi_(size)},
   {"copyFromTH", torch_mkl_(copyFromTH)},
   {"copyFromTH", torch_mkl_(copyFromTH)},
   {"MKL2TH", torch_mkl_(MKL2TH)},
   {"TH2MKL", torch_mkl_(TH2MKL)},
-  {"dim", torch_mkl_(dim)},
-//  {"isSeamless",  torch_mkl_(isSeamless)},
-//  {"directTH",  torch_mkl_(directTH)}, 
-//  {"size", torch_mkl_(size)},
+  {"isSeamless",  torch_mkl_(isSeamless)},
+  {"directTH",  torch_mkl_(directTH)}, 
  // {"clone", torch_mpi_(clone)},               //deep copy
   {NULL, NULL}
 };

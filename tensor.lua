@@ -98,19 +98,25 @@ end
 local query_operations = {
 	'dim' ,
 	'size' ,
+	'nElement' ,
 }
 
---[[
-local function Tensor__MKL__Query_Op(op)
-  return function(self)
-  
+
+local function Tensor__MKL__query_Op(op, ...)
+  return function(self, ...)
+	local tensor = self:directTH()
+	local metatable = getmetatable(tensor)
+	local func = metatable[op]	
+	return func(tensor, ...)
+  end
 end
+
 
 for type, SrcType in pairs(MKLTensorTypes) do
   local metatable = torch.getmetatable(SrcType)
   for _, query_op in pairs(query_operations) do
-    rawset(metatable, query_op, Tensor__MKL__query_Op(query_op)
+    rawset(metatable, query_op, Tensor__MKL__query_Op(query_op, ...))
   end
 end
-]]--
+
 
