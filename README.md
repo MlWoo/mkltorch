@@ -48,7 +48,10 @@ It offers mklTensor some basic operation to create, copy, convert or query some 
    * double()            convert a MKLDoubleTensor to the regular double tensor and return the regular double tensor.
    * MKL2TH(A)           convert a mklTensor to the regular tensor and return the regular tensor. And also assigned it to A
    * TH2MKL(A)           convert a regular tensor A to the mklTensor and return the mklTensor. 
-   * nElement()          return the ammount of the mklTensor.
+   * nElement()          Return the ammount of the mklTensor.
+   * directTH()          fetch the tensor from a MKLFloatTensor. It is __NOT__ recommended to use this method by user
+                         in order to avoid potential problems.
+   * size([dim])         Returns the size of the specified dimension dim or the sizes of all dimensions if param dim is ignored.        
 
 
 The package also provide a regular tensor conversion methods to get the corresponding mklTensor.
