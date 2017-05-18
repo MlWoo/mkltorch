@@ -108,8 +108,10 @@ void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
 	//printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
 	
   if(!THTensor_(isSameSizeAs)(self->tensor, src->tensor))
+  {
     THTensor_(resizeNd)(self->tensor, src->tensor->nDimension, src->tensor->size, NULL);
-    self->size = self->tensor->size;	
+    self->size = self->tensor->size;
+  }
 }
 
 
@@ -285,6 +287,31 @@ static int torch_mkl_(copyBacktoTH)(lua_State *L)
   return 1;
 }
 
+static int torch_mkl_(resizeAs)(lua_State *L)
+{
+  THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
+  printf("resizeAs 1, src size0 = %d\n", src->size[0]);
+  TH_MKL_(resizeAs)(pTensor, src);
+  printf("resizeAs 2 \n");
+  return 1;
+}
+
+static int torch_mkl_(copy)(lua_State *L)
+{
+  THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
+  THTensor_(copy)(pTensor->tensor, src->tensor);
+  return 1;
+}
+
+static int torch_mkl_(add)(lua_State *L)
+{
+  THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
+  //THTensor_(add)(pTensor->tensor, src->tensor);
+  return 1;
+}
 
 static int torch_mkl_(isSeamless)(lua_State *L)
 {
@@ -323,7 +350,10 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"MKL2TH", torch_mkl_(MKL2TH)},
   {"TH2MKL", torch_mkl_(TH2MKL)},
   {"isSeamless",  torch_mkl_(isSeamless)},
-  {"directTH",  torch_mkl_(directTH)}, 
+  {"directTH",  torch_mkl_(directTH)},
+  {"resizeAs",  torch_mkl_(resizeAs)},
+  {"copy",  torch_mkl_(copy)},
+  {"add",  torch_mkl_(add)},
  // {"clone", torch_mpi_(clone)},               //deep copy
   {NULL, NULL}
 };
