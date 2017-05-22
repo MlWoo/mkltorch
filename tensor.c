@@ -20,7 +20,7 @@
 #define torch_Tensor	    TH_CONCAT_STRING_3(torch., Real, Tensor)
 #define torch_tensor	    TH_CONCAT_STRING_3(torch., Real, Tensor)
 #define THMKLTensor	        TH_CONCAT_3(THMKL, Real, Tensor)
-
+#define torch_Tensor_(NAME) TH_CONCAT_4(torch_,Real,Tensor_,NAME)
 
 
 #include "generic/tensor.h"

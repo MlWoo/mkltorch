@@ -295,6 +295,78 @@ static int torch_mkl_(resizeAs)(lua_State *L)
   return 1;
 }
 
+/* helpful functions */
+static void torch_mkl_(c_readSizeStride)(lua_State *L, int index, int allowStride, THLongStorage **size_, THLongStorage **stride_)
+{
+  THLongStorage *size = NULL;
+  THLongStorage *stride = NULL;
+
+  if( (size = luaT_toudata(L, index, "torch.LongStorage")) )
+  {
+    if(!lua_isnoneornil(L, index+1))
+    {
+      if( (stride = luaT_toudata(L, index+1, "torch.LongStorage")) )
+        THArgCheck(stride->size == size->size, index+1, "provided stride and size are inconsistent");
+      else
+        THArgCheck(0, index+1, "torch.LongStorage expected");
+    }
+    THLongStorage_retain(size);
+    if(stride)
+      THLongStorage_retain(stride);
+  }
+  else
+  {
+    int i;
+
+    size = THLongStorage_newWithSize(8);
+    stride = THLongStorage_newWithSize(8);
+    THLongStorage_fill(size, -1);
+    THLongStorage_fill(stride, -1);
+
+    if(allowStride)
+    {
+      for(i = 0; i < 8; i++)
+      {
+        if(lua_isnone(L, index+2*i))
+          break;
+        size->data[i] = luaL_checklong(L, index+2*i);
+
+        if(lua_isnone(L, index+2*i+1))
+          break;
+        stride->data[i] = luaL_checklong(L, index+2*i+1);
+      }
+    }
+    else
+    {
+      for(i = 0; i < 8; i++)
+      {
+        if(lua_isnone(L, index+i))
+          break;
+        size->data[i] = luaL_checklong(L, index+i);
+      }
+    }
+  }
+
+  *size_ = size;
+  *stride_ = stride;
+}
+
+static int torch_mkl_(resize)(lua_State *L)
+{
+  THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  THLongStorage *size, *stride;
+  torch_mkl_(c_readSizeStride)(L, 2, 0, &size, &stride);
+  THTensor_(resize)(pTensor->tensor, size, stride);
+
+  THLongStorage_free(size);
+  THLongStorage_free(stride);
+
+  lua_settop(L, 1);
+  return 1;
+
+
+}
+
 static int torch_mkl_(copy)(lua_State *L)
 {
   THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
@@ -350,6 +422,7 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"isSeamless",  torch_mkl_(isSeamless)},
   {"directTH",  torch_mkl_(directTH)},
   {"resizeAs",  torch_mkl_(resizeAs)},
+  {"resize",  torch_mkl_(resize)},
   {"copy",  torch_mkl_(copy)},
   {"add",  torch_mkl_(add)},
  // {"clone", torch_mpi_(clone)},               //deep copy
