@@ -52,7 +52,8 @@ void TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
       CHECK_ERR( MKLDNN_(dnnConversionExecute)(cvtPrmt, src->tensor->storage->data, pTensor->storage->data), err );
       //src->tensor->storage->data =  cvtbuffer;
     }
-    src->tensor->flag = src->flagBackup;
+    //src->tensor->flag = src->flagBackup;
+    src->tensor->refcount = 2;
   }
   else
   {
@@ -89,6 +90,7 @@ void TH_MKL_(setMKLdata)(THMKLTensor *self, real * mkldata)
     self->tensor->storage = THStorage_(newWithData)(mkldata, memSize);
   }
   self->tensor->storage->data = mkldata;
+  self->tensor->flag = MKL_TENSOR_FLAG;
   self->mklStorage = 1;
 
 }
@@ -111,6 +113,8 @@ void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
   {
     THTensor_(resizeNd)(self->tensor, src->tensor->nDimension, src->tensor->size, NULL);
     self->size = self->tensor->size;
+    self->tensor->refcount = 2;
+    self->tensor->flag = MKL_TENSOR_FLAG;
   }
 }
 
@@ -162,7 +166,7 @@ void TH_MKL_(copyBacktoTH)(THTensor * pTensor, THMKLTensor * src)
 {
  
   THTensor_(resizeAs)(pTensor, src->tensor);  
-  src->tensor->flag = src->flagBackup;
+  //src->tensor->flag = src->flagBackup;
   THTensor_(copy)(pTensor, src->tensor);
 }
 
@@ -292,6 +296,8 @@ static int torch_mkl_(resizeAs)(lua_State *L)
   THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
   TH_MKL_(resizeAs)(pTensor, src);
+  pTensor->tensor->refcount = 2;
+  pTensor->tensor->flag = MKL_TENSOR_FLAG;
   return 1;
 }
 
@@ -358,6 +364,9 @@ static int torch_mkl_(resize)(lua_State *L)
   torch_mkl_(c_readSizeStride)(L, 2, 0, &size, &stride);
   THTensor_(resize)(pTensor->tensor, size, stride);
 
+  pTensor->size = pTensor->tensor->size;
+  pTensor->tensor->refcount = 2;
+  pTensor->tensor->flag = MKL_TENSOR_FLAG;
   THLongStorage_free(size);
   THLongStorage_free(stride);
 
@@ -372,6 +381,9 @@ static int torch_mkl_(copy)(lua_State *L)
   THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
   THTensor_(copy)(pTensor->tensor, src->tensor);
+  pTensor->tensor->refcount = 2;
+  pTensor->tensor->flag = MKL_TENSOR_FLAG;
+  pTensor->mkldnnLayout = src->mkldnnLayout;
   return 1;
 }
 
@@ -380,6 +392,8 @@ static int torch_mkl_(add)(lua_State *L)
   THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
   THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
   THTensor_(cadd)(pTensor->tensor,pTensor->tensor,1, src->tensor);
+  pTensor->tensor->refcount = 2;
+  pTensor->tensor->flag = MKL_TENSOR_FLAG;
   return 1;
 }
 
