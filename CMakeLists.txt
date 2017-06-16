@@ -4,64 +4,129 @@ CMAKE_POLICY(VERSION 2.8)
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 FIND_PACKAGE(Torch REQUIRED)
-FIND_PACKAGE(MKLML REQUIRED)
-IF(MKLML_FOUND)
-  IF (NOT WIN32)
-    SET(CMAKE_C_FLAGS "-std=c99 -Werror=implicit-function-declaration ${CMAKE_C_FLAGS}")
-  ENDIF (NOT WIN32)
-   
-  SET(src init.c tensor.c)
-  SET(luasrc init.lua tensor.lua FFI.lua)
-  
-  ADD_TORCH_PACKAGE(mkltorch "${src}" "${luasrc}")
-  TARGET_LINK_LIBRARIES(mkltorch luaT ${MKLML_LIBRARIES})
-  
-  IF(LUALIB)
-    TARGET_LINK_LIBRARIES(mkltorch ${LUALIB})
-  ENDIF()
-  
-  SET(MKLTorch_INSTALL_CMAKE_SUBDIR "share/cmake/mkltorch" CACHE PATH
-      "Install dir for .cmake files (relative to MKLTorch_INSTALL_PREFIX)")
-  SET(MKLTorch_INSTALL_INCLUDE_SUBDIR "include/mkltorch" CACHE PATH
-      "Install dir for  header files (relative to MKLTorch_INSTALL_PREFIX)")
-  SET(MKLTorch_INSTALL_LIB_SUBDIR "lib" CACHE PATH
-      "Install dir for libraries files (relative to MKLTorch_INSTALL_PREFIX)")
 
-  SET(MKLTorch_INSTALL_PREFIX "${Torch_INSTALL_PREFIX}")
-  SET(MKLTorch_INSTALL_LIB "${MKLTorch_INSTALL_PREFIX}/${MKLTorch_INSTALL_LIB_SUBDIR}")
-  SET(MKLTorch_INSTALL_INCLUDE "${MKLTorch_INSTALL_PREFIX}/${MKLTorch_INSTALL_INCLUDE_SUBDIR}")
-  SET(MKLTorch_INSTALL_CMAKE "${MKLTorch_INSTALL_PREFIX}/${MKLTorch_INSTALL_CMAKE_SUBDIR}")
+IF(NOT Torch_FOUND)
+  FIND_PACKAGE(Torch REQUIRED)
+ENDIF()
 
-  CONFIGURE_FILE("cmake/MKLTorchConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake-exports/MKLTorchConfig.cmake" @ONLY)
+IF(NOT TH_LIBRARIES)
+  SET(TH_LIBRARIES "TH")
+ENDIF(NOT TH_LIBRARIES)
+MESSAGE(STATUS "TH_LIBRARIES: ${TH_LIBRARIES}")
 
-  SET(MKLTorch_LIBRARIES mkltorch)
-  message("${MKLTorch_INSTALL_LIB}  ${MKLTorch_LIBRARIES}   ${MKLTorch_INSTALL_INCLUDE} ${MKLTorch_INSTALL_LIB}")
+# Flags
+# When using MSVC
+IF(MSVC)
+  # we want to respect the standard, and we are bored of those **** .
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE=1)
+  ADD_DEFINITIONS(-DTH_EXPORTS)
+ENDIF(MSVC)
 
-  INSTALL(
-    FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake-exports/MKLTorchConfig.cmake"
-    DESTINATION "${MKLTorch_INSTALL_CMAKE}")
+IF (CMAKE_VERSION VERSION_LESS "3.1")
+  SET(CMAKE_C_FLAGS "-std=c99 ${CMAKE_C_FLAGS}")
+ELSE ()
+  SET(CMAKE_C_STANDARD 99)
+ENDIF ()
 
-  INSTALL(TARGETS mkltorch 
-          LIBRARY DESTINATION "${MKLTorch_INSTALL_LIB}")
-  
-  INSTALL(FILES
-          init.c
-          tensor.c
-          MKLTensor.h
-          DESTINATION "${MKLTorch_INSTALL_INCLUDE}")
-  
-  INSTALL(FILES
-          generic/tensor.h
-          generic/tensor.c
-          DESTINATION "${MKLTorch_INSTALL_INCLUDE}/generic")
+# OpenMP support?
+SET(WITH_OPENMP ON CACHE BOOL "OpenMP support if available?")
+IF (APPLE AND CMAKE_COMPILER_IS_GNUCC)
+  EXEC_PROGRAM (uname ARGS -v  OUTPUT_VARIABLE DARWIN_VERSION)
+  STRING (REGEX MATCH "[0-9]+" DARWIN_VERSION ${DARWIN_VERSION})
+  MESSAGE (STATUS "MAC OS Darwin Version: ${DARWIN_VERSION}")
+  IF (DARWIN_VERSION GREATER 9)
+    SET(APPLE_OPENMP_SUCKS 1)
+  ENDIF (DARWIN_VERSION GREATER 9)
+  EXECUTE_PROCESS (COMMAND ${CMAKE_C_COMPILER} -dumpversion
+    OUTPUT_VARIABLE GCC_VERSION)
+  IF (APPLE_OPENMP_SUCKS AND GCC_VERSION VERSION_LESS 4.6.2)
+    MESSAGE(STATUS "Warning: Disabling OpenMP (unstable with this version of GCC)")
+    MESSAGE(STATUS " Install GCC >= 4.6.2 or change your OS to enable OpenMP")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
+    SET(WITH_OPENMP OFF CACHE BOOL "OpenMP support if available?" FORCE)
+  ENDIF ()
+ENDIF ()
 
-ELSE(MKLML_FOUND)
-  
+IF (WITH_OPENMP)
+  FIND_PACKAGE(OpenMP)
+  IF(OPENMP_FOUND)
+    MESSAGE(STATUS "Compiling with OpenMP support")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+  ENDIF(OPENMP_FOUND)
+ENDIF (WITH_OPENMP)
 
-  MESSAGE(FATAL_ERROR "MKLML libraries is not found, compilation is terminated, please refer to installation manul")
 
-ENDIF(MKLML_FOUND)
+SET(AVX512F_C_FLAGS "-mavx512f")
+SET(AVX512F_CXX_FLAGS "-mavx512f")
+IF("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+  MESSAGE(STATUS "${CMAKE_C_COMPILER_ID} usings Intel ")
+  SET(AVX512F_C_FLAGS "-xCOMMON-AVX512")
+ENDIF()
+
+IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  MESSAGE(STATUS "${CMAKE_CXX_COMPILER_ID} usings Intel ")
+  SET(AVX512F_CXX_FLAGS "-xCOMMON-AVX512")
+ENDIF()
+
+IF(FORCE_AVX512)
+    SET(CMAKE_C_FLAGS "${AVX512F_C_FLAGS} ${CMAKE_C_FLAGS}")
+    SET(CMAKE_CXX_FLAGS "${AVX512F_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+ENDIF(FORCE_AVX512)
+
+
+MESSAGE(STATUS  "MKLTorch CMAKE c FLAGS ${CMAKE_C_FLAGS}") 
+LINK_DIRECTORIES("${Torch_INSTALL_LIB}")
+
+
+SET(src init.c tensor.c)
+SET(luasrc init.lua tensor.lua FFI.lua)
+
+ADD_TORCH_PACKAGE(mkltorch "${src}" "${luasrc}")
+TARGET_LINK_LIBRARIES(mkltorch luaT ${TH_LIBRARIES})
+
+IF(LUALIB)
+  TARGET_LINK_LIBRARIES(mkltorch ${LUALIB})
+ENDIF()
+
+
+SET(MKLTorch_INSTALL_CMAKE_SUBDIR "share/cmake/mkltorch" CACHE PATH
+    "Install dir for .cmake files (relative to MKLTorch_INSTALL_PREFIX)")
+SET(MKLTorch_INSTALL_INCLUDE_SUBDIR "include/mkltorch" CACHE PATH
+    "Install dir for  header files (relative to MKLTorch_INSTALL_PREFIX)")
+SET(MKLTorch_INSTALL_LIB_SUBDIR "lib" CACHE PATH
+    "Install dir for libraries files (relative to MKLTorch_INSTALL_PREFIX)")
+
+SET(MKLTorch_INSTALL_PREFIX "${Torch_INSTALL_PREFIX}")
+SET(MKLTorch_INSTALL_LIB "${MKLTorch_INSTALL_PREFIX}/${MKLTorch_INSTALL_LIB_SUBDIR}")
+SET(MKLTorch_INSTALL_INCLUDE "${MKLTorch_INSTALL_PREFIX}/${MKLTorch_INSTALL_INCLUDE_SUBDIR}")
+SET(MKLTorch_INSTALL_CMAKE "${MKLTorch_INSTALL_PREFIX}/${MKLTorch_INSTALL_CMAKE_SUBDIR}")
+
+CONFIGURE_FILE("cmake/MKLTorchConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake-exports/MKLTorchConfig.cmake" @ONLY)
+
+SET(MKLTorch_LIBRARIES mkltorch)
+message("${MKLTorch_INSTALL_LIB}  ${MKLTorch_LIBRARIES}   ${MKLTorch_INSTALL_INCLUDE} ${MKLTorch_INSTALL_LIB}")
+
+INSTALL(
+  FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake-exports/MKLTorchConfig.cmake"
+  DESTINATION "${MKLTorch_INSTALL_CMAKE}")
+
+INSTALL(TARGETS mkltorch 
+        LIBRARY DESTINATION "${MKLTorch_INSTALL_LIB}")
+
+INSTALL(FILES
+        init.c
+        tensor.c
+        MKLTensor.h
+        DESTINATION "${MKLTorch_INSTALL_INCLUDE}")
+
+INSTALL(FILES
+        generic/tensor.h
+        generic/tensor.c
+        DESTINATION "${MKLTorch_INSTALL_INCLUDE}/generic")
+
 
 
 
