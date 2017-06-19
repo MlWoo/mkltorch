@@ -5,9 +5,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 FIND_PACKAGE(Torch REQUIRED)
 
-IF(NOT Torch_FOUND)
-  FIND_PACKAGE(Torch REQUIRED)
-ENDIF()
+message("${Torch_INSTALL_LUA_PATH_SUBDIR} ${MKLTorch_INSTALL_LIB}  ${MKLTorch_LIBRARIES}   ${MKLTorch_INSTALL_INCLUDE} ${MKLTorch_INSTALL_LIB}")
 
 IF(NOT TH_LIBRARIES)
   SET(TH_LIBRARIES "TH")
@@ -82,13 +80,19 @@ LINK_DIRECTORIES("${Torch_INSTALL_LIB}")
 
 SET(src init.c tensor.c)
 SET(luasrc init.lua tensor.lua FFI.lua)
-
-ADD_TORCH_PACKAGE(mkltorch "${src}" "${luasrc}")
+ADD_LIBRARY(mkltorch MODULE ${src})
 TARGET_LINK_LIBRARIES(mkltorch luaT ${TH_LIBRARIES})
+
 
 IF(LUALIB)
   TARGET_LINK_LIBRARIES(mkltorch ${LUALIB})
 ENDIF()
+
+SET_TARGET_PROPERTIES(mkltorch PROPERTIES
+  PREFIX "lib"
+  IMPORT_PREFIX "lib"
+  INSTALL_NAME_DIR "@executable_path/${Torch_INSTALL_BIN2CPATH}")
+
 
 
 SET(MKLTorch_INSTALL_CMAKE_SUBDIR "share/cmake/mkltorch" CACHE PATH
@@ -106,18 +110,24 @@ SET(MKLTorch_INSTALL_CMAKE "${MKLTorch_INSTALL_PREFIX}/${MKLTorch_INSTALL_CMAKE_
 CONFIGURE_FILE("cmake/MKLTorchConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake-exports/MKLTorchConfig.cmake" @ONLY)
 
 SET(MKLTorch_LIBRARIES mkltorch)
-message("${MKLTorch_INSTALL_LIB}  ${MKLTorch_LIBRARIES}   ${MKLTorch_INSTALL_INCLUDE} ${MKLTorch_INSTALL_LIB}")
+message("${Torch_INSTALL_LUA_PATH_SUBDIR} ${MKLTorch_INSTALL_LIB}  ${MKLTorch_LIBRARIES}   ${MKLTorch_INSTALL_INCLUDE} ${MKLTorch_INSTALL_LIB}")
+
 
 INSTALL(
   FILES
   "${CMAKE_CURRENT_BINARY_DIR}/cmake-exports/MKLTorchConfig.cmake"
   DESTINATION "${MKLTorch_INSTALL_CMAKE}")
 
+INSTALL(
+  FILES
+  ${luasrc}
+  DESTINATION "${Torch_INSTALL_LUA_PATH_SUBDIR}/mkltorch")
+
 INSTALL(TARGETS mkltorch 
         LIBRARY DESTINATION "${MKLTorch_INSTALL_LIB}")
 
 INSTALL(FILES
-        init.c
+       init.c
         tensor.c
         MKLTensor.h
         DESTINATION "${MKLTorch_INSTALL_INCLUDE}")
@@ -125,8 +135,8 @@ INSTALL(FILES
 INSTALL(FILES
         generic/tensor.h
         generic/tensor.c
+        generic/tensor.h
         DESTINATION "${MKLTorch_INSTALL_INCLUDE}/generic")
-
 
 
 
