@@ -25,34 +25,28 @@ void TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
 
   if (! MKLDNN_(dnnLayoutCompare)((dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout)) {
     CHECK_ERR( MKLDNN_(dnnConversionCreate)((dnnPrimitive_t*)&cvtPrmt, (dnnLayout_t)mkldnnLayout, (dnnLayout_t)usrLayout), err );
-    CHECK_ERR( MKLDNN_(dnnAllocateBuffer)((void**)&cvtBuffer, (dnnLayout_t)usrLayout), err );
   }
  
   //printf("workspace primitives = %p    buffer = %p\n", cvtPrmt, cvtBuffer);
-  pTensor->workspace[0] = (long)cvtPrmt;
-  pTensor->workspace[1] = (long)cvtBuffer;
+  pTensor->workspace = (long)cvtPrmt;
 
 }
 
 void TH_MKL_(convertToTH)(THTensor * pTensor, THMKLTensor * src)
 {
-  //pTensor->size = src->size;
-  if ((0 == src->workspace[0]) && (0 == src->workspace[1])){
-	TH_MKL_(createWorkspace)(src);
+  // need initialized
+  if (-1 == src->workspace){
+    TH_MKL_(createWorkspace)(src);
   }
-  if (0 != src->workspace[0]*src->workspace[1])
-  {
+  if (src->workspace > 0) {
     THTensor_(resizeAs)(pTensor, src->tensor); 
     dnnError_t err;
-    dnnPrimitive_t cvtPrmt = (dnnPrimitive_t)src->workspace[0];
-    //  real * cvtbuffer = (real *)src->workspace[1];
+    dnnPrimitive_t cvtPrmt = (dnnPrimitive_t)src->workspace;
 	
     if( cvtPrmt != 0)
     {
       CHECK_ERR( MKLDNN_(dnnConversionExecute)(cvtPrmt, src->tensor->storage->data, pTensor->storage->data), err );
-      //src->tensor->storage->data =  cvtbuffer;
     }
-    //src->tensor->flag = src->flagBackup;
     src->tensor->refcount = 2;
   }
   else
@@ -80,21 +74,6 @@ real* TH_MKL_(data)(THMKLTensor *self)
     return NULL;
 }
 
-void TH_MKL_(setMKLdata)(THMKLTensor *self, real * mkldata)
-{
-  //mkldata is allocated by MKLDNN, should not be freed by torch
-  //free original torch buffer
-  if(self->mkldnnLayout == 0){
-    int memSize = self->tensor->storage->size;
-    THStorage_(free)(self->tensor->storage);
-    self->tensor->storage = THStorage_(newWithData)(mkldata, memSize);
-  }
-  self->tensor->storage->data = mkldata;
-  self->tensor->flag = MKL_TENSOR_FLAG;
-  self->mklStorage = 1;
-
-}
-
 void TH_MKL_(resize4d)(THMKLTensor *self, long size0, long size1, long size2, long size3)
 {
 	//printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
@@ -108,16 +87,17 @@ void TH_MKL_(resize4d)(THMKLTensor *self, long size0, long size1, long size2, lo
 void TH_MKL_(resizeAs)(THMKLTensor *self, THMKLTensor *src)
 {
 	//printf("retain --permission-----------refcount = %4d\n", self->freeFlag);
-	
-  if(!THTensor_(isSameSizeAs)(self->tensor, src->tensor))
-  {
-    THTensor_(resizeNd)(self->tensor, src->tensor->nDimension, src->tensor->size, NULL);
-    self->size = self->tensor->size;
-    self->tensor->refcount = 2;
-    self->tensor->flag = MKL_TENSOR_FLAG;
-  }
+  //if (NULL != src->tensor) {
+	  if ((!THTensor_(isSameSizeAs)(self->tensor, src->tensor))){
+	    THTensor_(resizeNd)(self->tensor, src->tensor->nDimension, src->tensor->size, NULL);
+	    self->size = self->tensor->size;
+	    self->tensor->refcount = 2;
+	    self->tensor->flag = MKL_TENSOR_FLAG;
+      }
+ // } else {
+ //         printf("The input MKLTensor should be initialized!\n");
+ // }
 }
-
 
 //----------------------------------------------------------------------------
 void TH_MKL_(retain)(THMKLTensor *self)
@@ -136,7 +116,7 @@ void TH_MKL_(free)(THMKLTensor *self)
 	if(1 == self->mklStorage){
 		printf("you should free the tensor memory using mkldnn method");
 	}
-	if(NULL != self->workspace){
+	if(self->workspace > 0){
 		printf("you should free the workspace memory using mkldnn method");
 	}
 	THFree(self);
@@ -152,8 +132,7 @@ void TH_MKL_(copyFromTH)(THMKLTensor * pTensor, THTensor * src)
   pTensor->size = src->size;
   pTensor->flagBackup = src->flag;
   pTensor->tensor->flag = MKL_TENSOR_FLAG;
-  pTensor->workspace[0] = 0;
-  pTensor->workspace[1] = 0;
+  pTensor->workspace = -1;
 }
 
 void TH_MKL_(TH2MKL)(THMKLTensor * pTensor, THTensor * src)
@@ -183,9 +162,11 @@ void TH_MKL_(MKL2TH)(THTensor * pTensor, THMKLTensor * src)
 //////////////////////////////////////////////////////////////////////
 
 
+
 static int torch_mkl_(new)(lua_State *L)
 {
   //printf("enter new tensor\n");
+  int argc = lua_gettop(L);
   THMKLTensor* pTensor = THAlloc(sizeof(THMKLTensor));
   if(pTensor == NULL){
     printf("Cannot allocate memory for mklTensor\n");
@@ -194,10 +175,42 @@ static int torch_mkl_(new)(lua_State *L)
   pTensor->freeFlag = 0;
   pTensor->mklStorage = 0;
   pTensor->mkldnnLayout = 0;
-  pTensor->workspace[0] = 0;
-  pTensor->workspace[1] = 0;
+  pTensor->workspace = -1;
+     
+  if( 1 == argc ) {
+    int arg1Type = lua_type(L, 1);
+    THStorage *storage;
+    THTensor *tensor;
+    ptrdiff_t storageOffset;
+    THLongStorage *size, *stride;
+    THMKLTensor *src = NULL;
+    if((arg1Type == LUA_TUSERDATA) && (src = luaT_toudata(L, 1, torch_mkl_tensor)) )
+    {
+      storage = src->tensor->storage;
+      storageOffset = src->tensor->storageOffset;
+      size = THTensor_(newSizeOf)(src->tensor);
+      stride = THTensor_(newStrideOf)(src->tensor);
+      tensor = THTensor_(newWithStorage)(storage, storageOffset, size, stride);
+      THTensor_(copy)(tensor, src->tensor);
+      pTensor->tensor = tensor;
+      pTensor->tensor->refcount = 2;
+      pTensor->size = tensor->size;
+      pTensor->flagBackup = src->flagBackup;
+      pTensor->tensor->flag = MKL_TENSOR_FLAG;
+      pTensor->mkldnnLayout = src->mkldnnLayout;
 
-  luaT_pushudata(L, pTensor, torch_mkl_tensor);    
+      THLongStorage_free(size);
+      THLongStorage_free(stride);
+
+
+    } else {
+	  printf("Cannot support with the type! NULL or MKLTensor expected!\n");
+	}	
+  }else if (argc >1){
+	printf("Cannot support with mutiple argument! NULL or MKLTensor expected!\n");
+  }
+  
+  luaT_pushudata(L, pTensor, torch_mkl_tensor);  
   //printf("construct THMKLTensor = %p\n", pTensor);
   //printf("construct tensor      = %p\n", pTensor->tensor);
 	
@@ -246,7 +259,7 @@ static int torch_mkl_(MKL2TH)(lua_State *L)
   if( (src = luaT_toudata(L, 1, "torch.MKLFloatTensor")) && (dst = luaT_toudata(L, 2, "torch.FloatTensor")) )
     THMKLFloatTensorMKL2TH(dst, src);
   else if( (src = luaT_toudata(L, 1, "torch.MKLDoubleTensor")) && (dst = luaT_toudata(L, 2, "torch.DoubleTensor")) )
-    THMKLDoubleTensorTH2MKL(dst, src);
+    THMKLDoubleTensorMKL2TH(dst, src);
   else{
     luaL_typerror(L, 1, "torch.MKL*Tensor");
     }
@@ -429,7 +442,6 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"free", torch_mkl_(free)},
   //{"type", torch_mkl_(type)},
  // {"__len__", torch_mpi_(size)},
-  {"copyFromTH", torch_mkl_(copyFromTH)},
   {"copyFromTH", torch_mkl_(copyFromTH)},
   {"MKL2TH", torch_mkl_(MKL2TH)},
   {"TH2MKL", torch_mkl_(TH2MKL)},

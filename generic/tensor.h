@@ -6,13 +6,15 @@
 
 typedef struct THMKLTensor
 {
-	THTensor *tensor;   
-	long workspace[2]; 
-	char freeFlag;
-    int mklStorage;  //0:storage buffer allocated by THTensor, 1:storage buffer allocated by mklnn
-    long mkldnnLayout;
+	THTensor *tensor; 
+	long *size;  
+	long workspace;  // -1: not initialized; 0: no need; other: need convert
+	long mkldnnLayout;
+    int mklStorage;  //0:storage buffer allocated by THTensor, 1:storage buffer allocated by mklnn   
     char flagBackup;
-    long * size;
+    char freeFlag;
+    char reserved[2];
+    
 } THMKLTensor;
 
 #define MKL_TENSOR_FLAG  32
