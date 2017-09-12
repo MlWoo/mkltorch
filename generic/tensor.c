@@ -435,6 +435,15 @@ static int torch_mkl_(factory)(lua_State *L)
   return 1;
 }
 
+static int torch_mkl_(set)(lua_State *L)
+{
+  THMKLTensor *pTensor = luaT_checkudata(L, 1, torch_mkl_tensor);
+  THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
+  THTensor_(set)(pTensor->tensor, src->tensor);
+  pTensor->tensor->refcount = 2;
+  pTensor->tensor->flag = MKL_TENSOR_FLAG;
+  return 1;
+}
 
 static const struct luaL_Reg torch_mkl_(_) [] = {
   {"retain", torch_mkl_(retain)},
@@ -451,6 +460,7 @@ static const struct luaL_Reg torch_mkl_(_) [] = {
   {"resize",  torch_mkl_(resize)},
   {"copy",  torch_mkl_(copy)},
   {"add",  torch_mkl_(add)},
+  {"set", torch_mkl_(set)},
  // {"clone", torch_mpi_(clone)},               //deep copy
   {NULL, NULL}
 };
