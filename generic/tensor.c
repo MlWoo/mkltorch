@@ -442,6 +442,9 @@ static int torch_mkl_(set)(lua_State *L)
   THTensor_(set)(pTensor->tensor, src->tensor);
   pTensor->tensor->refcount = 2;
   pTensor->tensor->flag = MKL_TENSOR_FLAG;
+  pTensor->size = src->size;
+  pTensor->mkldnnLayout = 0;
+  pTensor->workspace = 0;
   return 1;
 }
 
