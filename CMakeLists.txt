@@ -127,13 +127,13 @@ INSTALL(TARGETS mkltorch
         LIBRARY DESTINATION "${MKLTorch_INSTALL_LIB}")
 
 INSTALL(FILES
-       init.c
+        init.c
         tensor.c
         MKLTensor.h
         DESTINATION "${MKLTorch_INSTALL_INCLUDE}")
 
 INSTALL(FILES
-        generic/tensor.h
+        generic/dnnWorkspace.h
         generic/tensor.c
         generic/tensor.h
         DESTINATION "${MKLTorch_INSTALL_INCLUDE}/generic")
