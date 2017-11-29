@@ -1,5 +1,5 @@
 #ifndef TH_GENERIC_FILE
-#error "You must define TH_GENERIC_FILE before including THGenerateAllTypes.h"
+#error "You must define TH_GENERIC_FILE before including THGenerateFloatTypes.h"
 #endif
 
 #define real float
@@ -27,15 +27,5 @@
 #undef Real
 #undef BIT
 #undef TH_REAL_IS_FLOAT
-
-#define real long
-#define accreal long
-#define Real Long
-#line 1 TH_GENERIC_FILE
-#include TH_GENERIC_FILE
-#undef real
-#undef accreal
-#undef Real
-#undef BIT
 
 #undef TH_GENERIC_FILE
