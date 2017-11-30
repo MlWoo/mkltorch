@@ -24,7 +24,7 @@ build = {
 jopts=$(getconf _NPROCESSORS_CONF)
 
 echo "Building on $jopts cores"
-cmake -E make_directory build && cd build && cmake .. -DLUALIB=$(LUALIB) -DFORCE_AVX512=$(FORCE_AVX512)  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(LUA_BINDIR)/.." -DCMAKE_INSTALL_PREFIX="$(PREFIX)"  -DLUA_INCDIR="$(LUA_INCDIR)" -DLUA_LIBDIR="$(LUA_LIBDIR)" && $(MAKE) -j$jopts install
+cmake -E make_directory build && cd build && cmake .. -DLUALIB=$(LUALIB) -DFORCE_AVX512=$(FORCE_AVX512)  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(LUA_BINDIR)/.." -DCMAKE_INSTALL_PREFIX="$(PREFIX)"  -DLUA_INCDIR="$(LUA_INCDIR)" -DLUA_LIBDIR="$(LUA_LIBDIR)" && $(MAKE) -j$jopts install
 ]],
 	platforms = {
       windows = {

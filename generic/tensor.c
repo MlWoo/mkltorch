@@ -157,7 +157,6 @@ static int torch_mkl_(set)(lua_State *L)
         THTensor_(free)(pTensor->tensor);
         pTensor->tensor = NULL;
       }
-
     }
   } else {
     THMKLTensor *src = luaT_checkudata(L, 2, torch_mkl_tensor);
@@ -213,6 +212,7 @@ void TH_MKL_(createWorkspace)(THMKLTensor* pTensor)
   CHECK_ERR( MKLDNN_(dnnLayoutDelete)(usrLayout), err );
  
   pTensor->workspace->cvtPrmt = cvtPrmt;
+  pTensor->workspace->sync = 1;
 
 }
 

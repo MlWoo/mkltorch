@@ -61,13 +61,13 @@ typedef struct THMKLRealTensor
       ffi.cdef(cdefs)
       local Tensor_type = string.format('torch.MKL%sTensor', Real)
       local Tensor = torch.getmetatable(Tensor_type)
-	  local Tensor_tt = ffi.typeof('THMKL' .. Real .. 'Tensor**')
+      local Tensor_tt = ffi.typeof('THMKL' .. Real .. 'Tensor**')
 	  
-	  rawset(Tensor, "cdata", function(self)
-                                if not self then return nil; end
-		                        return Tensor_tt(self)[0]
-	                          end)
-	  end
+      rawset(Tensor, "cdata", function(self)
+                              if not self then return nil; end
+                              return Tensor_tt(self)[0]
+                              end)
+  end
 end
 --mklLongTensor = torch.MKLLongTensor.new()
 --print('method cdata')
