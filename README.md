@@ -18,11 +18,11 @@ a = torch.FloatTensor(2,3)
 b = a:mkl()
 c = b:th()
 ```   
-__NOTE:__ 
+__NOTE:__  
 
-  * Any basic mathematical operations of mklTensor are __potentially dangerous__. It should be converted a mkltensor to a regular tensor if it is necessary to handle with these basic mathematical operations.
+  * Any basic mathematical operations of mklTensor are __potentially dangerous__. It should be converted a mkltensor to a regular tensor if it is necessary to handle with these basic mathematical operations.
   * Any convertions only occur between two types tentors which have __the same data type__. In other word, a regular tensor with float type only can be converted to MKLFloatTensor. It is impossible to get a corresponding MKLDoubleTensor.
-  * There are only three type data structures of mklTensor(single float, double float and long) currently. Single and double float types of mklTensor are provided in float computation like neural network. However, the long type of mklTensor are __never__ used in you programs explicitly. It is a supporting tensor type which is only used in neural network Operations.   
+  * There are only three type data structures of mklTensor(single float, double float and long) currently. Single and double float types of mklTensor are provided in float computation like neural network. However, the long type of mklTensor are __never__ used in you programs explicitly. It is a supporting tensor type which is only used in neural network Operations.   
 
 ## mklTensor Library ##
 It offers mklTensor some basic operation to create, copy, convert or query some infos.
